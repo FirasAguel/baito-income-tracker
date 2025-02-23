@@ -11,9 +11,6 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.48.1
         version: 2.48.1
-      '@tailwindcss/postcss':
-        specifier: ^4.0.8
-        version: 4.0.8
       next:
         specifier: 15.1.7
         version: 15.1.7(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -27,6 +24,9 @@ importers:
       '@eslint/eslintrc':
         specifier: ^3.3.0
         version: 3.3.0
+      '@tailwindcss/postcss':
+        specifier: ^4.0.8
+        version: 4.0.8
       '@types/node':
         specifier: ^20.17.19
         version: 20.17.19
