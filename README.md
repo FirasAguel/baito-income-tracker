@@ -1,11 +1,62 @@
-Baito Income Tracker is a [Next.js](https://nextjs.org) app designed to help part-time workers in Japan manage their shifts, track income, and proactively avoid exceeding the annual income threshold (103万円の壁). Built using TypeScript, Supabase for backend and authentication, and Tailwind CSS for responsive design, it provides real-time income predictions and intuitive shift management.
+# Baito Income Manager
 
-## Getting Started
+バイトのシフトと給与を簡単に管理し、103万の壁を超えないためのNext.jsアプリ
 
-First, run the development server:
+## 技術スタック
+
+- Next.js 15 (TypeScript)
+- Tailwind CSS
+- Supabase
+- ESLint & Prettier
+
+## セットアップ
+
+### 依存関係のインストール
+
+```bash
+pnpm install
+```
+
+### 開発サーバーの起動
 
 ```bash
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 開発ワークフロー
+
+### コミットメッセージガイドライン
+
+プロジェクトではConventional Commitsの形式を採用しています。コミットの際は以下の接頭辞を使用してください。
+
+- `feat:` 新機能の追加
+- `fix:` バグ修正
+- `chore:` ビルド、依存関係、ツールの変更（ユーザーに直接影響しない変更）
+- `docs:` ドキュメントの変更
+- `style:` コードフォーマット、スタイル修正（機能に影響なし）
+- `refactor:` コードのリファクタリング（機能の追加や修正なし）
+- `perf:` パフォーマンスの改善
+- `test:` テストの追加または変更
+
+### ブランチ運用
+
+- メインブランチ: `main` (プッシュ厳禁)
+- 開発ブランチ: `dev`（開発の起点、メインへのプルリク経由でマージ）
+- 機能開発ブランチ: `feat/[機能名]`
+- 修正ブランチ: `fix/[修正名]`
+- ブランチ名は英語、小文字、ハイフン区切りでお願いします。
+
+### プルリクエスト
+
+- 機能ごとに小さくPRを作成
+- PR作成時に、変更内容を簡潔に説明
+- PRは原則としてメンバーのレビューを経てから`dev`ブランチにマージ
+
+### フォーマットとLint
+
+開発時はESLintとPrettierを必ず実行してください。
+
+```bash
+pnpm format
+pnpm lint
+```
