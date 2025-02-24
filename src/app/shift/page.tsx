@@ -1,4 +1,4 @@
-// src/pages/shift/index.tsx
+// src/app/shift/page.tsx
 'use client';
 
 import { useState } from 'react';
