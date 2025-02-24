@@ -19,14 +19,7 @@ export default function ShiftCalendar() {
   ]);
 
   const [newShift, setNewShift] = useState<Partial<Shift>>({
-    startTime: new Date().toLocaleString('ja-JP', {
-      hour12: false, 
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    }),// 現在の時刻をデフォルトとして設定
+    startTime: '',
     endTime: '',
     hours: 0,
   });
@@ -41,7 +34,7 @@ export default function ShiftCalendar() {
     return diffInMs / (1000 * 60 * 60); // ミリ秒を時間に変換
   };
 
-    // 退社時間を計算する関数（出勤時間 + 勤務時間）
+  // 退社時間を計算する関数（出勤時間 + 勤務時間）
   const calculateEndTime = (startTime: string, hours: number): string => {
     const start = new Date(startTime);
     const totalMinutes = hours * 60; 
@@ -72,22 +65,55 @@ export default function ShiftCalendar() {
   };
 
   const addShift = () => {
-    if (newShift.job && newShift.startTime && (newShift.endTime || newShift.hours)) {
-      const shift = {
+    // 勤務先が入力されていない場合、エラーを表示して処理を中断
+    if (!newShift.job) {
+      setError('勤務先を入力してください。');
+      return;
+    }
+  
+    let shift: Shift | null = null;
+  
+    if (newShift.startTime && newShift.endTime) {
+      // ケース1：出勤時間と退社時間が入力されている場合、勤務時間を計算する
+      const hours = calculateWorkHours(newShift.startTime, newShift.endTime);
+      shift = {
         id: Date.now(),
         date: newShift.startTime.split('T')[0],
         job: newShift.job,
-        hours: newShift.hours || calculateWorkHours(newShift.startTime, newShift.endTime!),
+        hours,
         startTime: newShift.startTime,
-        endTime: newShift.endTime || calculateEndTime(newShift.startTime, newShift.hours!),
-      } as Shift;
-
-      setShifts([...shifts, shift]);
-      setNewShift({ startTime: new Date().toISOString().slice(0, 16), endTime: '', hours: 0 });
-      setError(null);
+        endTime: newShift.endTime,
+      };
+    } else if (newShift.startTime && newShift.hours) {
+      // ケース2：出勤時間と勤務時間が入力されている場合、退社時間を計算する
+      const endTime = calculateEndTime(newShift.startTime, newShift.hours);
+      shift = {
+        id: Date.now(),
+        date: newShift.startTime.split('T')[0],
+        job: newShift.job,
+        hours: newShift.hours,
+        startTime: newShift.startTime,
+        endTime,
+      };
+    } else if (newShift.endTime && newShift.hours) {
+      // ケース3：退社時間と勤務時間が入力されている場合、出勤時間を計算する
+      const startTime = calculateStartTime(newShift.endTime, newShift.hours);
+      shift = {
+        id: Date.now(),
+        date: newShift.endTime.split('T')[0],
+        job: newShift.job,
+        hours: newShift.hours,
+        startTime,
+        endTime: newShift.endTime,
+      };
     } else {
-      setError('出勤時間、退社時間、または勤務時間をすべて入力してください。');
+      // 必要な2つの項目が入力されていない場合、エラーを表示する
+      setError('勤務先とともに、出勤時間、退社時間、または勤務時間のうち2つを入力してください。');
+      return;
     }
+    setShifts([...shifts, shift]);
+    setNewShift({ startTime:'', endTime: '', hours: 0 });
+    setError(null);
   };
 
   const deleteShift = (id: number) => {
