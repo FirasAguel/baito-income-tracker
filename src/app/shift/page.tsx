@@ -1,7 +1,9 @@
 // src/app/shift/page.tsx
 'use client';
 
-import { useState} from 'react';
+import { useState, useEffect } from 'react';
+import { JobRate } from '../../types';
+import Link from 'next/link';
 
 interface Shift {
   id: number;
@@ -10,21 +12,46 @@ interface Shift {
   hours: number;
   startTime: string; // 出勤時間
   endTime: string;   // 退社時間
+  rate: number;
+  income: number;
 }
 
 export default function ShiftCalendar() {
-  const [shifts, setShifts] = useState<Shift[]>([
-    { id: 1, date: '2025-03-01', job: 'コンビニ', hours: 4.5, startTime: '2025-03-01T09:00', endTime: '2025-03-01T13:00' },
-    { id: 2, date: '2025-03-02', job: 'カフェ', hours: 6, startTime: '2025-03-02T10:00', endTime: '2025-03-02T16:00' },
-  ]);
-
+  const [shifts, setShifts] = useState<Shift[]>([]);
+  const [jobRates, setJobRates] = useState<{ job: string; rate: number }[]>([]); 
   const [newShift, setNewShift] = useState<Partial<Shift>>({
     startTime: '',
     endTime: '',
     hours: 0,
+    job: '',
   });
 
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Load jobRates from localStorage
+    const savedJobRates = localStorage.getItem('jobRates');
+    if (savedJobRates) {
+      const parsedJobRates: JobRate[] = JSON.parse(savedJobRates);
+      setJobRates(parsedJobRates);
+      if (parsedJobRates.length > 0) {
+        setNewShift((prevState) => ({
+          ...prevState,
+          job: parsedJobRates[0].job,
+          rate: parsedJobRates[0].rate,
+        }));
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (newShift.job) {
+      const foundJob = jobRates.find((j) => j.job === newShift.job);
+      if (foundJob) {
+        setNewShift((prev) => ({ ...prev, rate: foundJob.rate }));
+      }
+    }
+  }, [newShift.job, jobRates]);
 
   // 勤務時間を計算する関数（退社時間 - 出勤時間）
   const calculateWorkHours = (startTime: string, endTime: string): number => {
@@ -64,13 +91,25 @@ export default function ShiftCalendar() {
     }).replace(',', '');
   };
 
+  const calculateIncome = (hours: number, rate: number): number => {
+    return hours * rate;
+  };
+
+
   const addShift = () => {
     // 勤務先が入力されていない場合、エラーを表示して処理を中断
     if (!newShift.job) {
-      setError('勤務先を入力してください。');
+      setError('勤務先を選択してください');
       return;
     }
-  
+
+    const selectedJob = jobRates.find((j) => j.job === newShift.job);
+    if (!selectedJob) {
+      setError('設定に勤務先を入力してください');
+      return;
+    }
+
+    const rate = selectedJob.rate;
     let shift: Shift | null = null;
   
     if (newShift.startTime && newShift.endTime) {
@@ -83,6 +122,8 @@ export default function ShiftCalendar() {
         hours,
         startTime: newShift.startTime,
         endTime: newShift.endTime,
+        rate: rate,
+        income: calculateIncome(hours, rate),
       };
     } else if (newShift.startTime && newShift.hours) {
       // ケース2：出勤時間と勤務時間が入力されている場合、退社時間を計算する
@@ -94,6 +135,8 @@ export default function ShiftCalendar() {
         hours: newShift.hours,
         startTime: newShift.startTime,
         endTime,
+        rate: rate,
+        income: calculateIncome(newShift.hours, rate),
       };
     } else if (newShift.endTime && newShift.hours) {
       // ケース3：退社時間と勤務時間が入力されている場合、出勤時間を計算する
@@ -105,6 +148,8 @@ export default function ShiftCalendar() {
         hours: newShift.hours,
         startTime,
         endTime: newShift.endTime,
+        rate: rate,
+        income: calculateIncome(newShift.hours, rate),
       };
     } else {
       // 必要な2つの項目が入力されていない場合、エラーを表示する
@@ -112,7 +157,7 @@ export default function ShiftCalendar() {
       return;
     }
     setShifts([...shifts, shift]);
-    setNewShift({ startTime:'', endTime: '', hours: 0 });
+    setNewShift({ startTime: '', endTime: '', hours: 0, job: jobRates[0]?.job || '' });
     setError(null);
   };
 
@@ -140,18 +185,22 @@ export default function ShiftCalendar() {
   return (
     <div className="container mx-auto py-10">
       <h1 className="mb-4 text-2xl font-bold">シフト管理カレンダー</h1>
-
+      <Link href="/">
+        <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">戻る</button>
+      </Link>
       {error && <div className="mb-4 text-red-500">{error}</div>}
 
       {/* シフト入力フォーム */}
       <div className="mb-6">
-        <input
-          type="text"
-          placeholder="勤務先"
+      <select
           className="mr-2 border p-2"
           value={newShift.job || ''}
           onChange={(e) => setNewShift({ ...newShift, job: e.target.value })}
-        />
+        >
+          {jobRates.map((job) => (
+            <option key={job.job} value={job.job}>{job.job}</option>
+          ))}
+        </select>
          <input
           type="datetime-local"
           placeholder="出勤時間"
@@ -192,6 +241,8 @@ export default function ShiftCalendar() {
             <th className="px-4 py-2">出勤時間</th>
             <th className="px-4 py-2">退勤時間</th>
             <th className="px-4 py-2">勤務時間 (h)</th>
+            <th className="px-4 py-2">時給 (¥)</th>
+            <th className="px-4 py-2">収入 (¥)</th>
             <th className="px-4 py-2">操作</th>
           </tr>
         </thead>
@@ -203,6 +254,8 @@ export default function ShiftCalendar() {
               <td className="px-4 py-2 text-center">{formatTimeDisplay(shift.startTime)}</td>
               <td className="px-4 py-2 text-center">{formatTimeDisplay(shift.endTime)}</td>
               <td className="px-4 py-2 text-center">{formatHours(shift.hours)}</td>
+              <td className="px-4 py-2 text-center">{shift.rate}</td>
+              <td className="px-4 py-2 text-center">{shift.income}</td>
               <td className="px-4 py-2 text-center">
                 <button
                   onClick={() => deleteShift(shift.id)}

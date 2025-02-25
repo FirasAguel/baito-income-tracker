@@ -1,7 +1,7 @@
 // src/app/settings/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface JobRate {
   id: number;
@@ -18,10 +18,20 @@ export default function JobSettings() {
   const [newRate, setNewRate] = useState<number | ''>('');
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    // Load jobRates from localStorage if available
+    const savedJobRates = localStorage.getItem('jobRates');
+    if (savedJobRates) {
+      setJobRates(JSON.parse(savedJobRates));
+    }
+  }, []);
+
   const addJobRate = () => {
     if (newJob && newRate) {
       const newId = jobRates.length > 0 ? jobRates[jobRates.length - 1].id + 1 : 1;
-      setJobRates([...jobRates, { id: newId, job: newJob, rate: Number(newRate) }]);
+      const updatedJobRates = [...jobRates, { id: newId, job: newJob, rate: Number(newRate) }];
+      setJobRates(updatedJobRates);
+      localStorage.setItem('jobRates', JSON.stringify(updatedJobRates));
       setNewJob('');
       setNewRate('');
       setError(null);
@@ -31,7 +41,9 @@ export default function JobSettings() {
   };
 
   const deleteJobRate = (id: number) => {
-    setJobRates(jobRates.filter((j) => j.id !== id));
+    const updatedJobRates = jobRates.filter((j) => j.id !== id);
+    setJobRates(updatedJobRates);
+    localStorage.setItem('jobRates', JSON.stringify(updatedJobRates));
   };
 
   return (
