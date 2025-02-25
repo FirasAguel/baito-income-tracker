@@ -2,34 +2,44 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 interface JobRate {
   id: number;
   job: string;
   rate: number;
+  nightRate: number;
 }
 
 export default function JobSettings() {
-  const [jobRates, setJobRates] = useState<JobRate[]>([
-    { id: 1, job: 'コンビニ', rate: 1200 },
-    { id: 2, job: 'カフェ', rate: 1300 },
-  ]);
+  const [jobRates, setJobRates] = useState<JobRate[]>([]);
   const [newJob, setNewJob] = useState('');
   const [newRate, setNewRate] = useState<number | ''>('');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load jobRates from localStorage if available
     const savedJobRates = localStorage.getItem('jobRates');
     if (savedJobRates) {
-      setJobRates(JSON.parse(savedJobRates));
+      const parsedJobRates = JSON.parse(savedJobRates).map((job: JobRate) => ({
+        ...job,
+        rate: Number(job.rate) || 0, 
+        nightRate: Math.round(Number(job.nightRate)) || Math.round(Number(job.rate) * 1.25),
+      }));
+      setJobRates(parsedJobRates);
+    } else {
+      setJobRates([
+        { id: 1, job: 'コンビニ', rate: 1200, nightRate: 1200 * 1.25 },
+        { id: 2, job: 'カフェ', rate: 1300, nightRate: 1300 * 1.25},
+      ]);
     }
   }, []);
 
   const addJobRate = () => {
     if (newJob && newRate) {
       const newId = jobRates.length > 0 ? jobRates[jobRates.length - 1].id + 1 : 1;
-      const updatedJobRates = [...jobRates, { id: newId, job: newJob, rate: Number(newRate) }];
+      const rate = Number(newRate) || 0; 
+      const nightRate = Math.round(rate * 1.25);
+      const updatedJobRates = [...jobRates, { id: newId, job: newJob, rate, nightRate}];
       setJobRates(updatedJobRates);
       localStorage.setItem('jobRates', JSON.stringify(updatedJobRates));
       setNewJob('');
@@ -49,7 +59,9 @@ export default function JobSettings() {
   return (
     <div className="container mx-auto py-10">
       <h1 className="mb-4 text-2xl font-bold">勤務先と時給設定</h1>
-
+      <Link href="/">
+        <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">戻る</button>
+      </Link>
       {error && <div className="mb-4 text-red-500">{error}</div>}
 
       <div className="mb-6">
@@ -89,7 +101,7 @@ export default function JobSettings() {
             <tr key={job.id} className="border-b">
               <td className="px-4 py-2 text-center">{job.job}</td>
               <td className="px-4 py-2 text-center">{job.rate}</td>
-              <td className="px-4 py-2 text-center">{(job.rate * 1.25).toFixed(0)}</td>
+              <td className="px-4 py-2 text-center">{job.nightRate}</td>
               <td className="px-4 py-2 text-center">
                 <button
                   onClick={() => deleteJobRate(job.id)}
