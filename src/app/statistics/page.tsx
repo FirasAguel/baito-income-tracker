@@ -32,45 +32,60 @@ export default function IncomeStatistics() {
     }
   }, []);
 
-  const getDailyIncomeSum = () => {
-    const dailySums: { [key: string]: number } = {};
+  const getDailySums = () => {
+    const dailySums: { [key: string]: { income: number; hours: number } } = {};
     shifts.forEach((shift) => {
       if (!shift.endDate) return;
       const dateKey = shift.endDate;
-      const income = shift.income; 
-      dailySums[dateKey] = dailySums[dateKey] + income;
+      const income = shift.income || 0;
+      const hours = shift.hours || 0;
+      if (!dailySums[dateKey]) {
+        dailySums[dateKey] = { income: 0, hours: 0 };
+      }
+      dailySums[dateKey].income += income;
+      dailySums[dateKey].hours += hours;
     });
     return dailySums;
   };
-
-  const getMonthlyIncomeSum = () => {
-    const monthlySums: { [key: string]: number } = {};
+  
+  const getMonthlySums = () => {
+    const monthlySums: { [key: string]: { income: number; hours: number } } = {};
     shifts.forEach((shift) => {
       if (!shift.endDate) return;
       const date = new Date(shift.endDate);
       const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1)
         .toString()
         .padStart(2, '0')}`;
-      const income = shift.income; 
-      monthlySums[monthKey] = monthlySums[monthKey] + income;
+      const income = shift.income || 0; 
+      const hours = shift.hours || 0;
+      if (!monthlySums[monthKey]) {
+        monthlySums[monthKey] = { income: 0, hours: 0 };
+      }
+      monthlySums[monthKey].income += income;
+      monthlySums[monthKey].hours += hours;
     });
     return monthlySums;
   };
 
-  const getYearlyIncomeSum = () => {
-    const yearlySums: { [key: string]: number } = {};
+  const getYearlySums = () => {
+    const yearlySums: { [key: string]: { income: number; hours: number } } = {};
     shifts.forEach((shift) => {
       if (!shift.endDate) return;
       const yearKey = new Date(shift.endDate).getFullYear().toString();
-      const income = shift.income; 
-      yearlySums[yearKey] = yearlySums[yearKey] + income;
+      const income = shift.income || 0; 
+      const hours = shift.hours || 0;
+      if (!yearlySums[yearKey]) {
+        yearlySums[yearKey] = { income: 0, hours: 0 };
+      }
+      yearlySums[yearKey].income += income;
+      yearlySums[yearKey].hours += hours;
     });
     return yearlySums;
   };
 
-  const dailySums = getDailyIncomeSum();
-  const monthlySums = getMonthlyIncomeSum();
-  const yearlySums = getYearlyIncomeSum();
+  const dailySums = getDailySums();
+  const monthlySums = getMonthlySums();
+  const yearlySums= getYearlySums();
 
   return (
     <div className="container mx-auto py-10">
@@ -82,26 +97,26 @@ export default function IncomeStatistics() {
       </Link>
       {error && <div className="mb-4 text-red-500">{error}</div>}
 
-      {/* Daily Income Sum */}
+      {/* Daily Sum */}
       <div className="mb-8">
-        <h2 className="mb-2 text-xl font-semibold">日別収入履歴</h2>
+        <h2 className="mb-2 text-xl font-semibold">日別履歴</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full table-auto border-collapse border border-gray-200">
             <thead className="bg-gray-200">
               <tr>
                 <th className="px-4 py-2 border border-gray-200">日付</th>
                 <th className="px-4 py-2 border border-gray-200">収入</th>
+                <th className="px-4 py-2 border border-gray-200">勤務時間</th>
               </tr>
             </thead>
             <tbody>
-              {Object.entries(dailySums).map(([date, income]) => (
-                  <tr key={date} className="border-b">
-                    <td className="px-4 py-2 border border-gray-200">{date}</td>
-                    <td className="px-4 py-2 border border-gray-200">
-                      {income}
-                    </td>
-                  </tr>
-                ))}
+              {Object.entries(dailySums).map(([date, { income, hours }]) => (
+                <tr key={date} className="border-b">
+                  <td className="px-4 py-2 border border-gray-200">{date}</td>
+                  <td className="px-4 py-2 border border-gray-200">{income}</td>
+                  <td className="px-4 py-2 border border-gray-200">{hours}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -116,15 +131,15 @@ export default function IncomeStatistics() {
               <tr>
                 <th className="px-4 py-2 border border-gray-200">月</th>
                 <th className="px-4 py-2 border border-gray-200">収入</th>
+                <th className="px-4 py-2 border border-gray-200">勤務時間</th>
               </tr>
             </thead>
             <tbody>
-              {Object.entries(monthlySums).map(([date, income]) => (
+              {Object.entries(monthlySums).map(([date, { income, hours }]) => (
                 <tr key={date} className="border-b">
                   <td className="px-4 py-2 border border-gray-200">{date}</td>
-                  <td className="px-4 py-2 border border-gray-200">
-                    {income}
-                  </td>
+                  <td className="px-4 py-2 border border-gray-200">{income}</td>
+                  <td className="px-4 py-2 border border-gray-200">{hours}</td>
                 </tr>
               ))}
             </tbody>
@@ -141,15 +156,15 @@ export default function IncomeStatistics() {
               <tr>
                 <th className="px-4 py-2 border border-gray-200">年</th>
                 <th className="px-4 py-2 border border-gray-200">収入</th>
+                <th className="px-4 py-2 border border-gray-200">勤務時間</th>
               </tr>
             </thead>
             <tbody>
-              {Object.entries(yearlySums).map(([date, income]) => (
+              {Object.entries(yearlySums).map(([date, { income, hours }]) => (
                 <tr key={date} className="border-b">
                   <td className="px-4 py-2 border border-gray-200">{date}</td>
-                  <td className="px-4 py-2 border border-gray-200">
-                    {income}
-                  </td>
+                  <td className="px-4 py-2 border border-gray-200">{income}</td>
+                  <td className="px-4 py-2 border border-gray-200">{hours}</td>
                 </tr>
               ))}
             </tbody>
