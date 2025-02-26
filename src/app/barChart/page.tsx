@@ -76,7 +76,6 @@ const IncomeSummaryPage: React.FC = () => {
     },
   };
   
-
   return (
     <div className="min-h-screen bg-gray-100 py-10 px-5">
       <div className="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow-lg">
