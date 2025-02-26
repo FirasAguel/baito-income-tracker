@@ -4,39 +4,43 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+interface IncomeGoal {
+  year: string;
+  incomeGoal: number;
+}
+
 export default function IncomeGoalSetting() {
   const currentYear = new Date().getFullYear();
-  const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
-  const [incomeGoal, setIncomeGoal] = useState<string>('');
+  const [incomeGoalData, setIncomeGoalData] = useState<IncomeGoal>({ year: currentYear.toString(), incomeGoal: 0 });
   const [message, setMessage] = useState<string>('');
 
   useEffect(() => {
     const storedData = localStorage.getItem('incomeGoals');
     if (storedData) {
       const incomeGoals: { [key: string]: number } = JSON.parse(storedData);
-      setIncomeGoal(incomeGoals[selectedYear]?.toString() || '');
+      setIncomeGoalData((prev) => ({ ...prev, incomeGoal: incomeGoals[prev.year] || 0 }));
     }
-  }, [selectedYear]);
+  }, [incomeGoalData.year]);
 
   const handleSave = () => {
     const storedData = localStorage.getItem('incomeGoals');
     let incomeGoals: { [key: string]: number } = storedData ? JSON.parse(storedData) : {};
-    if (incomeGoal === '') {
-      delete incomeGoals[selectedYear];
+    if (incomeGoalData.incomeGoal === 0) {
+      delete incomeGoals[incomeGoalData.year];
     } else {
-      incomeGoals[selectedYear] = parseInt(incomeGoal, 10) * 10000;
+      incomeGoals[incomeGoalData.year] = incomeGoalData.incomeGoal * 10000;
     }
     localStorage.setItem('incomeGoals', JSON.stringify(incomeGoals));
     setMessage('保存しました');
   };
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedYear(e.target.value);
+    setIncomeGoalData((prev) => ({ ...prev, year: e.target.value }));
     setMessage('');
   };
 
   const handleIncomeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setIncomeGoal(e.target.value);
+    setIncomeGoalData((prev) => ({ ...prev, incomeGoal: parseInt(e.target.value, 10) || 0 }));
     setMessage('');
   };
 
@@ -53,7 +57,7 @@ export default function IncomeGoalSetting() {
       <div className="mb-6 flex flex-col space-y-4">
         <div className="flex items-center space-x-2">
           <label htmlFor="yearSelect" className="text-lg">年を選択:</label>
-          <select id="yearSelect" value={selectedYear} onChange={handleYearChange} className="border p-2">
+          <select id="yearSelect" value={incomeGoalData.year} onChange={handleYearChange} className="border p-2">
             {years.map((year) => (
               <option key={year} value={year}>{year}</option>
             ))}
@@ -61,7 +65,7 @@ export default function IncomeGoalSetting() {
         </div>
         <div className="flex items-center space-x-2">
           <label htmlFor="incomeGoalInput" className="text-lg">収入目標:</label>
-          <input id="incomeGoalInput" type="number" value={incomeGoal} onChange={handleIncomeChange} className="border p-2 w-24" />
+          <input id="incomeGoalInput" type="number" value={incomeGoalData.incomeGoal} onChange={handleIncomeChange} className="border p-2 w-24" />
           <span>万円</span>
         </div>
       </div>
