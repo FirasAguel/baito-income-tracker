@@ -7,7 +7,8 @@ import Link from 'next/link';
 
 interface Shift {
   id: number;
-  date: string;
+  startDate: string;
+  endDate: string;
   job: string;
   hours: number;
   startTime: string; // 出勤時間
@@ -139,7 +140,8 @@ export default function ShiftCalendar() {
       const income = calculateIncome(newShift.startTime, newShift.endTime, rate, nightRate);
       shift = {
         id: Date.now(),
-        date: newShift.endTime.split('T')[0],
+        startDate: newShift.startTime.split('T')[0],
+        endDate: newShift.endTime.split('T')[0],
         job: newShift.job,
         hours,
         startTime: newShift.startTime,
@@ -154,7 +156,8 @@ export default function ShiftCalendar() {
       const income = calculateIncome(newShift.startTime, endTime, rate, nightRate);
       shift = {
         id: Date.now(),
-        date: endTime.split('T')[0],
+        startDate: newShift.startTime.split('T')[0],
+        endDate: endTime.split('T')[0],
         job: newShift.job,
         hours: newShift.hours,
         startTime: newShift.startTime,
@@ -169,7 +172,8 @@ export default function ShiftCalendar() {
       const income = calculateIncome(startTime, newShift.endTime, rate, nightRate);
       shift = {
         id: Date.now(),
-        date: newShift.endTime.split('T')[0],
+        startDate: startTime.split('T')[0],
+        endDate: newShift.endTime.split('T')[0],
         job: newShift.job,
         hours: newShift.hours,
         startTime,
@@ -275,7 +279,7 @@ export default function ShiftCalendar() {
         <tbody>
           {shifts.map((shift) => (
             <tr key={shift.id} className="border-b">
-              <td className="px-4 py-2 text-center">{shift.date}</td>
+              <td className="px-4 py-2 text-center">{shift.startDate}</td>
               <td className="px-4 py-2 text-center">{shift.job}</td>
               <td className="px-4 py-2 text-center">{formatTimeDisplay(shift.startTime)}</td>
               <td className="px-4 py-2 text-center">{formatTimeDisplay(shift.endTime)}</td>
