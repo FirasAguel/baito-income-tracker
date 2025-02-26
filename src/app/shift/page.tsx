@@ -139,7 +139,7 @@ export default function ShiftCalendar() {
       const income = calculateIncome(newShift.startTime, newShift.endTime, rate, nightRate);
       shift = {
         id: Date.now(),
-        date: newShift.startTime.split('T')[0],
+        date: newShift.endTime.split('T')[0],
         job: newShift.job,
         hours,
         startTime: newShift.startTime,
@@ -154,7 +154,7 @@ export default function ShiftCalendar() {
       const income = calculateIncome(newShift.startTime, endTime, rate, nightRate);
       shift = {
         id: Date.now(),
-        date: newShift.startTime.split('T')[0],
+        date: endTime.split('T')[0],
         job: newShift.job,
         hours: newShift.hours,
         startTime: newShift.startTime,
