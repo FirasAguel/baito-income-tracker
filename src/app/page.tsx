@@ -11,8 +11,11 @@ export default function Home() {
         <Link href="/shift">
           <button className="rounded bg-blue-500 px-4 py-2 text-white">シフト管理</button>
         </Link>
-        <Link href="/settings">
+        <Link href="/shift_settings">
           <button className="rounded bg-green-500 px-4 py-2 text-white">勤務先設定</button>
+        </Link>
+        <Link href="/incomeGoal_setting">
+          <button className="rounded bg-orange-500 px-4 py-2 text-white">年収目標設定</button>
         </Link>
       </div>
     </div>
