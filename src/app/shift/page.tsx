@@ -31,7 +31,6 @@ export default function ShiftCalendar() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load jobRates from localStorage
     const savedJobRates = localStorage.getItem('jobRates');
     if (savedJobRates) {
       const parsedJobRates: JobRate[] = JSON.parse(savedJobRates);
@@ -45,13 +44,22 @@ export default function ShiftCalendar() {
         }));
       }
     }
+    const savedShifts = localStorage.getItem('shifts');
+    if (savedShifts) {
+      const parsedShifts: Shift[] = JSON.parse(savedShifts);
+      setShifts(parsedShifts);
+    }
   }, []);
 
   useEffect(() => {
     if (newShift.job) {
       const foundJob = jobRates.find((j) => j.job === newShift.job);
       if (foundJob) {
-        setNewShift((prev) => ({ ...prev, rate: foundJob.rate }));
+        setNewShift((prev) => ({
+          ...prev,
+          rate: foundJob.rate,
+          nightRate: foundJob.nightRate,
+        }));
       }
     }
   }, [newShift.job, jobRates]);
@@ -157,7 +165,7 @@ export default function ShiftCalendar() {
       shift = {
         id: Date.now(),
         startDate: newShift.startTime.split('T')[0],
-        endDate: endTime.split('T')[0],
+        endDate: endTime.split(' ')[0].replace(/\//g,"-"),
         job: newShift.job,
         hours: newShift.hours,
         startTime: newShift.startTime,
@@ -172,7 +180,7 @@ export default function ShiftCalendar() {
       const income = calculateIncome(startTime, newShift.endTime, rate, nightRate);
       shift = {
         id: Date.now(),
-        startDate: startTime.split('T')[0],
+        startDate: startTime.split(' ')[0].replace(/\//g,"-"),
         endDate: newShift.endTime.split('T')[0],
         job: newShift.job,
         hours: newShift.hours,
@@ -187,13 +195,17 @@ export default function ShiftCalendar() {
       setError('勤務先とともに、出勤時間、退社時間、または勤務時間のうち2つを入力してください。');
       return;
     }
-    setShifts([...shifts, shift]);
+    const updatedShifts = [...shifts, shift];
+    setShifts(updatedShifts);
+    localStorage.setItem('shifts', JSON.stringify(updatedShifts));
     setNewShift({ startTime: '', endTime: '', hours: 0, job: jobRates[0]?.job || '' });
     setError(null);
   };
 
   const deleteShift = (id: number) => {
-    setShifts(shifts.filter((shift) => shift.id !== id));
+    const updatedShifts = shifts.filter((shift) => shift.id !== id);
+    setShifts(updatedShifts);
+    localStorage.setItem('shifts', JSON.stringify(updatedShifts));
   };
 
   const formatTimeDisplay = (time: string) => {
