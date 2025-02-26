@@ -17,6 +17,9 @@ export default function Home() {
         <Link href="/incomeGoal_setting">
           <button className="rounded bg-orange-500 px-4 py-2 text-white">年収目標設定</button>
         </Link>
+        <Link href="/statistics">
+          <button className="rounded bg-gray-500 px-4 py-2 text-white">給料履歴</button>
+        </Link>
       </div>
     </div>
   );

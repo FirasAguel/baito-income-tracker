@@ -2,91 +2,65 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Shift, IncomeGoal } from '../../types';
+import { Shift, IncomeGoal, JobRate } from '../../types';
 import Link from 'next/link';
 
 export default function IncomeStatistics() {
   const [shifts, setShifts] = useState<Shift[]>([]);
+  const [jobRates, setJobRates] = useState<JobRate[]>([]);
   const [incomegoal, setIncomeGoal] = useState<IncomeGoal[]>([]);
+  const [selectedJob, setSelectedJob] = useState<string>('all');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const storedShifts = localStorage.getItem('shifts');
-    if (storedShifts) {
-      try {
-        setShifts(JSON.parse(storedShifts));
-      } catch (e) {
-        setError('シフトデータの読み込みに失敗しました');
-      }
+    try {
+      const storedShifts = localStorage.getItem('shifts');
+      if (storedShifts) setShifts(JSON.parse(storedShifts));
+
+      const storedIncomeGoal = localStorage.getItem('incomegoal');
+      if (storedIncomeGoal) setIncomeGoal(JSON.parse(storedIncomeGoal));
+
+      const storedJobRates = localStorage.getItem('jobRates');
+      if (storedJobRates) setJobRates(JSON.parse(storedJobRates));
+    } catch (e) {
+      setError('データの読み込みに失敗しました');
     }
   }, []);
 
-  useEffect(() => {
-    const storedIncomeGoal = localStorage.getItem('incomegoal');
-    if (storedIncomeGoal) {
-      try {
-        setIncomeGoal(JSON.parse(storedIncomeGoal));
-      } catch (e) {
-        setError('年収目標の読み込みに失敗しました');
-      }
-    }
-  }, []);
+  const getIncomeSums = (shiftsData: Shift[], type: 'daily' | 'monthly' | 'yearly') => {
+    const incomeSums: { [key: string]: { income: number; hours: number } } = {};
 
-  const getDailySums = () => {
-    const dailySums: { [key: string]: { income: number; hours: number } } = {};
-    shifts.forEach((shift) => {
-      if (!shift.endDate) return;
-      const dateKey = shift.endDate;
-      const income = shift.income || 0;
-      const hours = shift.hours || 0;
-      if (!dailySums[dateKey]) {
-        dailySums[dateKey] = { income: 0, hours: 0 };
-      }
-      dailySums[dateKey].income += income;
-      dailySums[dateKey].hours += hours;
-    });
-    return dailySums;
-  };
-  
-  const getMonthlySums = () => {
-    const monthlySums: { [key: string]: { income: number; hours: number } } = {};
-    shifts.forEach((shift) => {
+    shiftsData.forEach((shift) => {
       if (!shift.endDate) return;
       const date = new Date(shift.endDate);
-      const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1)
-        .toString()
-        .padStart(2, '0')}`;
-      const income = shift.income || 0; 
-      const hours = shift.hours || 0;
-      if (!monthlySums[monthKey]) {
-        monthlySums[monthKey] = { income: 0, hours: 0 };
+      let key = '';
+
+      if (type === 'daily') {
+        key = shift.endDate;
+      } else if (type === 'monthly') {
+        key = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+      } else {
+        key = date.getFullYear().toString();
       }
-      monthlySums[monthKey].income += income;
-      monthlySums[monthKey].hours += hours;
+
+      if (!incomeSums[key]) {
+        incomeSums[key] = { income: 0, hours: 0 };
+      }
+      incomeSums[key].income += shift.income || 0;
+      incomeSums[key].hours += shift.hours || 0;
     });
-    return monthlySums;
+
+    return incomeSums;
   };
 
-  const getYearlySums = () => {
-    const yearlySums: { [key: string]: { income: number; hours: number } } = {};
-    shifts.forEach((shift) => {
-      if (!shift.endDate) return;
-      const yearKey = new Date(shift.endDate).getFullYear().toString();
-      const income = shift.income || 0; 
-      const hours = shift.hours || 0;
-      if (!yearlySums[yearKey]) {
-        yearlySums[yearKey] = { income: 0, hours: 0 };
-      }
-      yearlySums[yearKey].income += income;
-      yearlySums[yearKey].hours += hours;
-    });
-    return yearlySums;
-  };
+  const filteredShifts = selectedJob === 'all' 
+    ? shifts 
+    : shifts.filter(shift => shift.job === selectedJob);
 
-  const dailySums = getDailySums();
-  const monthlySums = getMonthlySums();
-  const yearlySums= getYearlySums();
-
+  const dailySums = getIncomeSums(filteredShifts, 'daily');
+  const monthlySums = getIncomeSums(filteredShifts, 'monthly');
+  const yearlySums = getIncomeSums(filteredShifts, 'yearly');
+  
   return (
     <div className="container mx-auto py-10">
       <h1 className="mb-4 text-2xl font-bold">収入履歴</h1>
@@ -95,6 +69,20 @@ export default function IncomeStatistics() {
           戻る
         </button>
       </Link>
+
+      <div className="mb-4">
+        <select
+          className="mr-2 border p-2"
+          value={selectedJob}
+          onChange={(e) => setSelectedJob(e.target.value)}
+        >
+          <option value="all">All</option>
+          {jobRates.map((job) => (
+            <option key={job.job} value={job.job}>{job.job}</option>
+          ))}
+        </select>
+      </div>
+
       {error && <div className="mb-4 text-red-500">{error}</div>}
 
       {/* Daily Sum */}
