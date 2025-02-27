@@ -19,6 +19,7 @@ const COLORS = [
 const PieChartPage: React.FC = () => {
   const [incomeGoalData, setIncomeGoalData] = useState<IncomeGoal | null>(null);
   const [jobStatistics, setJobStatistics] = useState<JobStatistics[]>([]);
+  const [selectedYear, setSelectedYear] = useState<string | null>(null);
 
   useEffect(() => {
     const incomeGoalStr = localStorage.getItem('incomeGoals');
@@ -30,31 +31,51 @@ const PieChartPage: React.FC = () => {
         const parsedJobStatistics = JSON.parse(jobStatisticsStr) as JobStatistics[];
         setIncomeGoalData(parsedIncomeGoal);
         setJobStatistics(parsedJobStatistics);
+
+        const allYears = [
+          ...new Set([
+            ...Object.keys(parsedIncomeGoal),
+            ...parsedJobStatistics.flatMap(job => Object.keys(job.yearly.income))
+          ])
+        ].sort();
+        
+        const currentYear = new Date().getFullYear().toString();
+        if (allYears.includes(currentYear)) {
+          setSelectedYear(currentYear);
+        }
       } catch (error) {
-        console.error("解析 localStorage 数据时出错:", error);
+        console.error("localStorage データの解析エラー:", error);
       }
     }
   }, []);
 
-  if (!incomeGoalData || jobStatistics.length === 0) {
+  if (!incomeGoalData || jobStatistics.length === 0 || !selectedYear) {
     return (
       <div className="flex items-center justify-center h-screen text-xl">
         Loading...
       </div>
     );
   }
-  
-  const targetYear = Object.keys(incomeGoalData)[0] as keyof IncomeGoal;
-  const incomeGoal = incomeGoalData[targetYear];
+
+  const availableYears = [
+    ...new Set([
+      ...Object.keys(incomeGoalData),
+      ...jobStatistics.flatMap(job => Object.keys(job.yearly.income))
+    ])
+  ].sort();
+
+  const incomeGoal = selectedYear as keyof IncomeGoal in incomeGoalData 
+  ? incomeGoalData[selectedYear as keyof IncomeGoal] 
+  : 0;
   const numericIncomeGoal = typeof incomeGoal === 'string' ? Number(incomeGoal) : incomeGoal;
 
   const individualJobs = jobStatistics.filter(job => job.job !== 'all');
   const totalJobIncome = individualJobs.reduce((acc, job) => {
-    return acc + (job.yearly.income[targetYear] || 0);
+    return acc + (job.yearly.income[selectedYear] || 0);
   }, 0);
   
   const pieData = individualJobs.map(job => {
-    const income = job.yearly.income[targetYear] || 0;
+    const income = job.yearly.income[selectedYear] || 0;
     return {
       name: job.job,
       income,
@@ -72,16 +93,32 @@ const PieChartPage: React.FC = () => {
   }
   
   const allJobsRecord = jobStatistics.find(job => job.job === 'all');
-  const totalAllJobsIncome = allJobsRecord ? (allJobsRecord.yearly.income[targetYear] || 0) : 0;
-  
+  const totalAllJobsIncome = allJobsRecord ? (allJobsRecord.yearly.income[selectedYear] || 0) : 0;
+
   return (
     <div className="flex flex-col items-center justify-center p-4">
       <h1 className="text-3xl font-semibold text-center mb-6">給料見込</h1>
-        <Link href="/">
-            <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">
-            戻る
-            </button>
-        </Link>
+      <Link href="/">
+        <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">
+          戻る
+        </button>
+      </Link>
+
+      {/* 年選択ボタン */}
+      <div className="flex flex-wrap justify-center space-x-4 mb-4">
+        {availableYears.map(year => (
+          <button
+            key={year}
+            onClick={() => setSelectedYear(year)}
+            className={`px-4 py-2 rounded-md transition ${
+              selectedYear === year ? "bg-blue-600 text-white" : "bg-gray-300 text-gray-700 hover:bg-gray-400"
+            }`}
+          >
+            {year}
+          </button>
+        ))}
+      </div>
+
       <h2 className="text-2xl font-bold mb-4">目標金額：{incomeGoal}円</h2>
       <PieChart width={400} height={400}>
         <Pie 
