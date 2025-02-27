@@ -65,7 +65,7 @@ export default function IncomeGoalSetting() {
         </div>
         <div className="flex items-center space-x-2">
           <label htmlFor="incomeGoalInput" className="text-lg">収入目標:</label>
-          <input id="incomeGoalInput" type="number" value={incomeGoalData.incomeGoal} onChange={handleIncomeChange} className="border p-2 w-24" />
+          <input id="incomeGoalInput" type="text" value={incomeGoalData.incomeGoal} onChange={handleIncomeChange} className="border p-2 w-24" />
           <span>万円</span>
         </div>
       </div>
