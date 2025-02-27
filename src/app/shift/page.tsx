@@ -2,8 +2,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { JobRate } from '../../types';
+import { JobRate, JobStatistics } from '../../types';
 import Link from 'next/link';
+import { toast } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 interface Shift {
   id: number;
@@ -27,6 +30,7 @@ export default function ShiftCalendar() {
     hours: 0,
     job: '',
   });
+  const [jobStatistics, setJobStatistics] = useState<JobStatistics | null>(null); // only needs job:"all"
 
   const [error, setError] = useState<string | null>(null);
 
@@ -49,6 +53,14 @@ export default function ShiftCalendar() {
       const parsedShifts: Shift[] = JSON.parse(savedShifts);
       setShifts(parsedShifts);
     }
+    const savedJobStats = localStorage.getItem('jobStatistics');
+    if (savedJobStats) {
+      const parsedJobStats: JobStatistics[] = JSON.parse(savedJobStats);
+      const allStats = parsedJobStats.find((stat) => stat.job === 'all');
+      if (allStats) {
+        setJobStatistics(allStats);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -63,6 +75,35 @@ export default function ShiftCalendar() {
       }
     }
   }, [newShift.job, jobRates]);
+
+  useEffect(() => {
+    if (!jobStatistics) return;
+
+    const currentYear = new Date().getFullYear().toString();
+    const today = new Date();
+    const startOfYear = new Date(today.getFullYear(), 0, 1);
+    const pastDays = Math.floor((today.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24));
+    const dayOfWeek = today.getDay(); 
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; 
+    const mondayDate = new Date(today); 
+    mondayDate.setDate(today.getDate() + mondayOffset); 
+    const currentWeek = mondayDate.toISOString().split('T')[0];
+    const weeklyHours = jobStatistics?.weekly?.hours?.[currentWeek] || 0;
+    const yearlyIncome = jobStatistics?.yearly?.income?.[currentYear] || 0;
+
+    if (weeklyHours >= 35 && weeklyHours < 40) {
+      const remainingHours = 40 - weeklyHours;
+      console.log('Showing weekly warning toast');
+      toast.warning(`今週はあと${remainingHours}時間働けます.`, { position: "top-right", autoClose: 5000 });
+    }
+    
+    if (yearlyIncome > 950000 && yearlyIncome < 1300000) {
+      const remainingIncome = Math.floor((1300000 - yearlyIncome) / 10000);
+      console.log('Showing yearly warning toast');
+      toast.warning(`今年はあと${remainingIncome}万円で103万円の壁を超えてしまいます.`, { position: "top-right", autoClose: 5000 });
+    }
+  }, [jobStatistics]);
+
 
   // 勤務時間を計算する関数（退社時間 - 出勤時間）
   const calculateWorkHours = (startTime: string, endTime: string): number => {
@@ -231,6 +272,7 @@ export default function ShiftCalendar() {
       <Link href="/">
         <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">戻る</button>
       </Link>
+      <ToastContainer position="top-right" autoClose={5000} />
       {error && <div className="mb-4 text-red-500">{error}</div>}
 
       {/* シフト入力フォーム */}

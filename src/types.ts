@@ -29,6 +29,10 @@ export type JobStatistics = {
     income: { [date: string]: number };
     hours: { [date: string]: number };
   };
+  weekly: {
+    income: { [week: string]: number };
+    hours: { [week: string]: number };
+  };
   monthly: {
     income: { [month: string]: number };
     hours: { [month: string]: number };

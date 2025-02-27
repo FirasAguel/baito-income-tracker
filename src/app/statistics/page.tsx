@@ -11,6 +11,10 @@ interface JobStatistics {
     income: { [date: string]: number };
     hours: { [date: string]: number };
   };
+  weekly: {
+    income: { [week: string]: number };
+    hours: { [week: string]: number };
+  };
   monthly: {
     income: { [month: string]: number };
     hours: { [month: string]: number };
@@ -38,29 +42,34 @@ export default function IncomeStatistics() {
     }
   }, []);
 
-  const getSums = (shiftsData: Shift[], type: 'daily' | 'monthly' | 'yearly') => {
+  const getSums = (shiftsData: Shift[], type: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
     const incomeSums: { [key: string]: { income: number; hours: number } } = {};
-
+  
     shiftsData.forEach((shift) => {
       if (!shift.endDate) return;
       const date = new Date(shift.endDate);
       let key = '';
-
+  
       if (type === 'daily') {
         key = shift.endDate;
+      } else if (type === 'weekly') {
+        // 获取当前日期所在周的周一日期
+        const startOfWeek = new Date(date);
+        startOfWeek.setDate(date.getDate() - date.getDay() + 1);
+        key = `${startOfWeek.getFullYear()}-${(startOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${startOfWeek.getDate().toString().padStart(2, '0')}`;
       } else if (type === 'monthly') {
         key = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
       } else {
         key = date.getFullYear().toString();
       }
-
+  
       if (!incomeSums[key]) {
         incomeSums[key] = { income: 0, hours: 0 };
       }
       incomeSums[key].income += shift.income || 0;
       incomeSums[key].hours += shift.hours || 0;
     });
-
+  
     return incomeSums;
   };
 
@@ -69,77 +78,97 @@ export default function IncomeStatistics() {
     : shifts.filter(shift => shift.job === selectedJob);
 
   const dailySums = getSums(filteredShifts, 'daily');
+  const weeklySums = getSums(filteredShifts, 'weekly');
   const monthlySums = getSums(filteredShifts, 'monthly');
   const yearlySums = getSums(filteredShifts, 'yearly');
 
   useEffect(() => {
-  if (shifts.length > 0 && jobRates.length > 0) {
-    const stats: JobStatistics[] = jobRates.map((jobRate) => {
-      const job = jobRate.job;
-      const jobShifts = shifts.filter((shift) => shift.job === job);
-      const daily = getSums(jobShifts, 'daily');
-      const monthly = getSums(jobShifts, 'monthly');
-      const yearly = getSums(jobShifts, 'yearly');
-      const yearlyIncome = Object.fromEntries(
-        Object.entries(yearly).map(([k, v]) => [k, v.income])
+    if (shifts.length > 0 && jobRates.length > 0) {
+      const stats: JobStatistics[] = jobRates.map((jobRate) => {
+        const job = jobRate.job;
+        const jobShifts = shifts.filter((shift) => shift.job === job);
+        const daily = getSums(jobShifts, 'daily');
+        const weekly = getSums(jobShifts, 'weekly');
+        const monthly = getSums(jobShifts, 'monthly');
+        const yearly = getSums(jobShifts, 'yearly');
+        const yearlyIncome = Object.fromEntries(
+          Object.entries(yearly).map(([k, v]) => [k, v.income])
+        );
+  
+        return {
+          job,
+          daily: {
+            income: Object.fromEntries(
+              Object.entries(daily).map(([k, v]) => [k, v.income])
+            ),
+            hours: Object.fromEntries(
+              Object.entries(daily).map(([k, v]) => [k, v.hours])
+            ),
+          },
+          weekly: {
+            income: Object.fromEntries(
+              Object.entries(weekly).map(([k, v]) => [k, v.income])
+            ),
+            hours: Object.fromEntries(
+              Object.entries(weekly).map(([k, v]) => [k, v.hours])
+            ),
+          },
+          monthly: {
+            income: Object.fromEntries(
+              Object.entries(monthly).map(([k, v]) => [k, v.income])
+            ),
+            hours: Object.fromEntries(
+              Object.entries(monthly).map(([k, v]) => [k, v.hours])
+            ),
+          },
+          yearly: {
+            income: yearlyIncome,
+          },
+        };
+      });
+  
+      // all jobs
+      const allDaily = getSums(shifts, 'daily');
+      const allWeekly = getSums(shifts, 'weekly');
+      const allMonthly = getSums(shifts, 'monthly');
+      const allYearly = getSums(shifts, 'yearly');
+      const allYearlyIncome = Object.fromEntries(
+        Object.entries(allYearly).map(([k, v]) => [k, v.income])
       );
-
-      return {
-        job,
+      const allStats: JobStatistics = {
+        job: 'all',
         daily: {
           income: Object.fromEntries(
-            Object.entries(daily).map(([k, v]) => [k, v.income])
+            Object.entries(allDaily).map(([k, v]) => [k, v.income])
           ),
           hours: Object.fromEntries(
-            Object.entries(daily).map(([k, v]) => [k, v.hours])
+            Object.entries(allDaily).map(([k, v]) => [k, v.hours])
+          ),
+        },
+        weekly: {
+          income: Object.fromEntries(
+            Object.entries(allWeekly).map(([k, v]) => [k, v.income])
+          ),
+          hours: Object.fromEntries(
+            Object.entries(allWeekly).map(([k, v]) => [k, v.hours])
           ),
         },
         monthly: {
           income: Object.fromEntries(
-            Object.entries(monthly).map(([k, v]) => [k, v.income])
+            Object.entries(allMonthly).map(([k, v]) => [k, v.income])
           ),
           hours: Object.fromEntries(
-            Object.entries(monthly).map(([k, v]) => [k, v.hours])
+            Object.entries(allMonthly).map(([k, v]) => [k, v.hours])
           ),
         },
         yearly: {
-          income: yearlyIncome,
+          income: allYearlyIncome,
         },
       };
-    });
-    // all jobs
-    const allDaily = getSums(shifts, 'daily');
-    const allMonthly = getSums(shifts, 'monthly');
-    const allYearly = getSums(shifts, 'yearly');
-    const allYearlyIncome = Object.fromEntries(
-      Object.entries(allYearly).map(([k, v]) => [k, v.income])
-    );
-    const allStats: JobStatistics = {
-      job: 'all',
-      daily: {
-        income: Object.fromEntries(
-          Object.entries(allDaily).map(([k, v]) => [k, v.income])
-        ),
-        hours: Object.fromEntries(
-          Object.entries(allDaily).map(([k, v]) => [k, v.hours])
-        ),
-      },
-      monthly: {
-        income: Object.fromEntries(
-          Object.entries(allMonthly).map(([k, v]) => [k, v.income])
-        ),
-        hours: Object.fromEntries(
-          Object.entries(allMonthly).map(([k, v]) => [k, v.hours])
-        ),
-      },
-      yearly: {
-        income: allYearlyIncome,
-      },
-    };
-    stats.push(allStats);
-    localStorage.setItem('jobStatistics', JSON.stringify(stats));
-  }
-}, [shifts, jobRates]);
+      stats.push(allStats);
+      localStorage.setItem('jobStatistics', JSON.stringify(stats));
+    }
+  }, [shifts, jobRates]);
 
 
   return (
@@ -182,6 +211,31 @@ export default function IncomeStatistics() {
               {Object.entries(dailySums).map(([date, { income, hours }]) => (
                 <tr key={date} className="border-b">
                   <td className="px-4 py-2 border border-gray-200">{date}</td>
+                  <td className="px-4 py-2 border border-gray-200">{income}</td>
+                  <td className="px-4 py-2 border border-gray-200">{hours}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Weekly Income Sum */}
+      <div className="mb-8">
+        <h2 className="mb-2 text-xl font-semibold">週別履歴</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full table-auto border-collapse border border-gray-200">
+            <thead className="bg-gray-200">
+              <tr>
+                <th className="px-4 py-2 border border-gray-200">週</th>
+                <th className="px-4 py-2 border border-gray-200">収入</th>
+                <th className="px-4 py-2 border border-gray-200">勤務時間</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(weeklySums).map(([week, { income, hours }]) => (
+                <tr key={week} className="border-b">
+                  <td className="px-4 py-2 border border-gray-200">{week}</td>
                   <td className="px-4 py-2 border border-gray-200">{income}</td>
                   <td className="px-4 py-2 border border-gray-200">{hours}</td>
                 </tr>
