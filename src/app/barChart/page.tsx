@@ -100,17 +100,17 @@ const IncomeSummaryPage: React.FC = () => {
             }`}
           >
             すべての年
-          </button>
-          {years.map(year => (
-            <button 
-            key={year} 
-            onClick={() => setSelectedYear(year)} 
-            className={`px-4 py-2 rounded-md transition ${
-              selectedYear === year ? "bg-blue-600 text-white" : "bg-gray-300 text-gray-700 hover:bg-gray-400"
-            }`}
-          >
-            {year}
-          </button>
+            </button>
+              {years.sort((a, b) => parseInt(a) - parseInt(b)).map(year => (
+                <button 
+                  key={year} 
+                  onClick={() => setSelectedYear(year)} 
+                  className={`px-4 py-2 rounded-md transition ${
+                    selectedYear === year ? "bg-blue-600 text-white" : "bg-gray-300 text-gray-700 hover:bg-gray-400"
+                  }`}
+                >
+                  {year}
+            </button>
           ))}
         </div>
 
