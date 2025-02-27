@@ -12,6 +12,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 const IncomeSummaryPage: React.FC = () => {
   const [data, setData] = useState<JobStatistics[]>([]);
   const [selectedJob, setSelectedJob] = useState<string>("all");
+  const [selectedYear, setSelectedYear] = useState<string>("all");
 
   useEffect(() => {
     try {
@@ -36,7 +37,11 @@ const IncomeSummaryPage: React.FC = () => {
     );
   }
 
-  const months = Object.keys(data[0].monthly.income);
+  const years = Array.from(new Set(data.flatMap(item => Object.keys(item.monthly.income).map(date => date.split('-')[0]))));
+  const months = Array.from(new Set(data.flatMap(item => Object.keys(item.monthly.income))))
+  .filter(month => selectedYear === "all" || month.startsWith(selectedYear))
+  .sort((a, b) => a.localeCompare(b)); 
+
 
   const getJobIncome = (job: string) => {
     return months.map((month) => {
@@ -85,6 +90,29 @@ const IncomeSummaryPage: React.FC = () => {
             戻る
             </button>
         </Link>
+
+        {/* 年選択ボタン */}
+        <div className="flex flex-wrap justify-center space-x-4 mb-4">
+          <button 
+          onClick={() => setSelectedYear("all")} 
+          className={`px-4 py-2 rounded-md transition ${
+            selectedYear === "all" ? "bg-blue-600 text-white" : "bg-gray-300 text-gray-700 hover:bg-gray-400"
+            }`}
+          >
+            すべての年
+          </button>
+          {years.map(year => (
+            <button 
+            key={year} 
+            onClick={() => setSelectedYear(year)} 
+            className={`px-4 py-2 rounded-md transition ${
+              selectedYear === year ? "bg-blue-600 text-white" : "bg-gray-300 text-gray-700 hover:bg-gray-400"
+            }`}
+          >
+            {year}
+          </button>
+          ))}
+        </div>
 
         {/* 仕事選択ボタン */}
         <div className="flex flex-wrap justify-center space-x-4 mb-8">
