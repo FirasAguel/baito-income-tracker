@@ -18,7 +18,7 @@ export default function IncomeGoalSetting() {
     const storedData = localStorage.getItem('incomeGoals');
     if (storedData) {
       const incomeGoals: { [key: string]: number } = JSON.parse(storedData);
-      setIncomeGoalData((prev) => ({ ...prev, incomeGoal: incomeGoals[prev.year] || 0 }));
+      setIncomeGoalData((prev) => ({ ...prev, incomeGoal: incomeGoals[prev.year]/10000 || 0 }));
     }
   }, [incomeGoalData.year]);
 
