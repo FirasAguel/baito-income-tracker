@@ -83,7 +83,7 @@ export async function GET() {
       const userShifts = shifts.filter((shift) => shift.user_id === user_id);
 
       const allJobStats: JobStatistics = {
-        // @ts-ignore: Suppressing error for 'id' property
+        // @ts-expect-error: Adding 'id' property which is not defined in 'JobStatistics'
         id: uuidv4(),
         user_id,
         job: 'all',
