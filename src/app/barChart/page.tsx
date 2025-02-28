@@ -4,7 +4,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Bar } from 'react-chartjs-2';
-import { JobStatistics } from '../../types';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -25,13 +24,20 @@ ChartJS.register(
   Legend
 );
 
+type Shift = {
+  id: number;
+  endDate: string;
+  income: number;
+  job: string;
+};
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const IncomeSummaryPage: React.FC = () => {
-  const [data, setData] = useState<JobStatistics[]>([]);
-  const [selectedJob, setSelectedJob] = useState<string>('');
+  const [shifts, setShifts] = useState<Shift[]>([]);
+  const [selectedJob, setSelectedJob] = useState<string>('すべて');
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -42,14 +48,15 @@ const IncomeSummaryPage: React.FC = () => {
       } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
-        const { data: jobData, error } = await supabase
-          .from('job_statistics')
+        // Fetch raw shifts for the user
+        const { data: shiftsData, error } = await supabase
+          .from('shifts')
           .select('*')
           .eq('user_id', user.id);
         if (error) {
           console.error('データを読み込めませんでした:', error);
-        } else if (jobData) {
-          setData(jobData as JobStatistics[]);
+        } else if (shiftsData) {
+          setShifts(shiftsData as Shift[]);
         }
       } else {
         console.error('ユーザーが認証されていません');
@@ -58,47 +65,45 @@ const IncomeSummaryPage: React.FC = () => {
     fetchData();
   }, []);
 
-  // When data is loaded, set the default selected job to the first unique job.
-  useEffect(() => {
-    const uniqueJobs = Array.from(new Set(data.map((item) => item.job)));
-    if (data.length > 0 && selectedJob === '' && uniqueJobs.length > 0) {
-      setSelectedJob(uniqueJobs[0]);
-    }
-  }, [data, selectedJob]);
-
-  if (!data || data.length === 0) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-100 px-5 py-10">
-        <div className="rounded-lg bg-white p-8 text-center shadow-lg">
-          <h1 className="mb-4 text-3xl font-semibold">データがありません</h1>
-          <p className="text-gray-600">
-            ローカルストレージにデータを追加してください。
-          </p>
-        </div>
-      </div>
-    );
-  }
-
+  // Compute available years from the shifts data
   const years = Array.from(
     new Set(
-      data.flatMap((item) =>
-        Object.keys(item.monthly.income).map((date) => date.split('-')[0])
-      )
+      shifts.map((shift) => new Date(shift.endDate).getFullYear().toString())
     )
   );
-  const months = Array.from(
-    new Set(data.flatMap((item) => Object.keys(item.monthly.income)))
-  )
-    .filter((month) => selectedYear === 'all' || month.startsWith(selectedYear))
-    .sort((a, b) => a.localeCompare(b));
 
-  // Aggregate income for the selected job by summing income from all records that match.
+  // Build a set of months (formatted as "YYYY-MM") for shifts that match the selected year (or all years if 'all')
+  let monthsSet = new Set<string>();
+  shifts.forEach((shift) => {
+    const date = new Date(shift.endDate);
+    const monthStr = `${date.getFullYear()}-${(date.getMonth() + 1)
+      .toString()
+      .padStart(2, '0')}`;
+    if (selectedYear === 'all' || monthStr.startsWith(selectedYear)) {
+      monthsSet.add(monthStr);
+    }
+  });
+  const months = Array.from(monthsSet).sort((a, b) => a.localeCompare(b));
+
+  // Aggregate income for the selected job by month.
+  // If "すべて" is selected, sum income from all shifts.
   const getJobIncome = (job: string) => {
-    return months.map((month) =>
-      data
-        .filter((item) => item.job === job)
-        .reduce((sum, item) => sum + (item.monthly.income[month] || 0), 0)
-    );
+    return months.map((month) => {
+      const monthlyShifts = shifts.filter((shift) => {
+        const date = new Date(shift.endDate);
+        const monthStr = `${date.getFullYear()}-${(date.getMonth() + 1)
+          .toString()
+          .padStart(2, '0')}`;
+        if (selectedYear !== 'all' && !monthStr.startsWith(selectedYear))
+          return false;
+        if (job !== 'すべて' && shift.job !== job) return false;
+        return monthStr === month;
+      });
+      return monthlyShifts.reduce(
+        (sum, shift) => sum + (Number(shift.income) || 0),
+        0
+      );
+    });
   };
 
   const chartData = {
@@ -130,8 +135,9 @@ const IncomeSummaryPage: React.FC = () => {
     },
   };
 
-  // Compute unique jobs for button rendering.
-  const uniqueJobs = Array.from(new Set(data.map((item) => item.job)));
+  // Compute unique jobs from shifts and prepend "すべて" for all workplaces combined
+  const uniqueJobs = Array.from(new Set(shifts.map((shift) => shift.job)));
+  const jobOptions = ['すべて', ...uniqueJobs];
 
   return (
     <div className="min-h-screen bg-gray-100 px-5 py-10">
@@ -174,7 +180,7 @@ const IncomeSummaryPage: React.FC = () => {
 
         {/* 仕事選択ボタン */}
         <div className="mb-8 flex flex-wrap justify-center space-x-4">
-          {uniqueJobs.map((job) => (
+          {jobOptions.map((job) => (
             <button
               key={job}
               onClick={() => setSelectedJob(job)}
