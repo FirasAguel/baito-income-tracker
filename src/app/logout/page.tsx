@@ -6,9 +6,11 @@
  */
 
 import { useRouter } from 'next/navigation';
+import { useAuth } from '../Auth/AuthProvider';
 
 export default function LogoutButton() {
   const router = useRouter();
+  const { logout } = useAuth();
 
   const handleLogout = async () => {
     // サーバー側の /api/logout を呼んで signOut()
@@ -17,6 +19,10 @@ export default function LogoutButton() {
     // フロント側のトークンも削除
     localStorage.removeItem('token');
 
+    
+
+    // ログアウト処理
+    logout();
     // ログインページへ移動
     router.push('/login');
   };

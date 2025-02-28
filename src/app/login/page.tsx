@@ -10,6 +10,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth } from '../Auth/AuthProvider';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -35,8 +37,18 @@ export default function LoginPage() {
       if (data.access_token) {
         localStorage.setItem('token', data.access_token);
       }
+      
+      const token = data.token;
+      // プロフィール情報の構築
+      const profile = {
+        userId: data.user.employee_id || data.user.admin_id, // ユーザーの ID
+        username: data.user.name,                       // ユーザー名                     
+        token: token,                              // 認証トークン
+      };
+      // ログイン処理
+      login(profile);
       // ログイン後の画面へ遷移
-      router.push('/logout');
+      router.push('/homepage');
     } catch (err: any) {
       if (axios.isAxiosError(err) && err.response) {
         setError(err.response.data.message || 'ログインに失敗しました。');
