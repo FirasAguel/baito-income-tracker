@@ -9,6 +9,21 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 // Import drag and drop addon and its styles
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.scss';
+import supabase from '@/lib/supabase';
+
+const locales = {
+  'ja-JP': require('date-fns/locale/ja'),
+};
+
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }),
+  getDay,
+  locales,
+});
+
+const DragAndDropCalendar = withDragAndDrop(Calendar);
 
 interface Shift {
   id: number;
@@ -23,23 +38,6 @@ interface Shift {
   income: number;
 }
 
-const locales = {
-  // eslint-disable-next-line
-  'ja-JP': require('date-fns/locale/ja'),
-};
-
-const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }),
-  getDay,
-  locales,
-});
-
-// Wrap Calendar with drag and drop HOC
-const DragAndDropCalendar = withDragAndDrop(Calendar);
-
-// Income calculation function (same as in your manual input page)
 const calculateIncome = (
   startTime: string,
   endTime: string,
@@ -66,12 +64,27 @@ const calculateIncome = (
 
 export default function ShiftCalendar() {
   const [shifts, setShifts] = useState<Shift[]>([]);
+  const [currentView, setCurrentView] = useState('month');
 
+  // Fetch shifts from Supabase on mount
   useEffect(() => {
-    const savedShifts = localStorage.getItem('shifts');
-    if (savedShifts) {
-      setShifts(JSON.parse(savedShifts));
-    }
+    const fetchShifts = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        const { data: shiftsData, error } = await supabase
+          .from('shifts')
+          .select('*')
+          .eq('user_id', user.id);
+        if (error) {
+          console.error('Error fetching shifts:', error);
+        } else if (shiftsData) {
+          setShifts(shiftsData);
+        }
+      }
+    };
+    fetchShifts();
   }, []);
 
   // Convert shifts to calendar events
@@ -85,7 +98,7 @@ export default function ShiftCalendar() {
 
   // Update shift when dragged & dropped
   const moveEvent = useCallback(
-    ({ event, start, end, isAllDay: droppedOnAllDaySlot = false }) => {
+    async ({ event, start, end, isAllDay: droppedOnAllDaySlot = false }) => {
       setShifts((prev) => {
         const existing = prev.find((shift) => shift.id === event.id);
         if (!existing) return prev;
@@ -96,9 +109,24 @@ export default function ShiftCalendar() {
         let newStartTime: Date;
         let newEndTime: Date;
 
-        if (droppedOnAllDaySlot) {
-          // In month view, only update the date portion,
-          // keeping the original hours and minutes.
+        // If in month view, only update the date portion and keep original time
+        if (currentView === 'month') {
+          newStartTime = new Date(
+            start.getFullYear(),
+            start.getMonth(),
+            start.getDate(),
+            originalStart.getHours(),
+            originalStart.getMinutes()
+          );
+          newEndTime = new Date(
+            end.getFullYear(),
+            end.getMonth(),
+            end.getDate(),
+            originalEnd.getHours(),
+            originalEnd.getMinutes()
+          );
+        } else if (droppedOnAllDaySlot) {
+          // For all-day drops (e.g. in week/day views)
           newStartTime = new Date(
             start.getFullYear(),
             start.getMonth(),
@@ -114,7 +142,6 @@ export default function ShiftCalendar() {
             originalEnd.getMinutes()
           );
         } else {
-          // Otherwise, update fully (for example, in week or day views)
           newStartTime = start;
           newEndTime = end;
         }
@@ -135,18 +162,33 @@ export default function ShiftCalendar() {
           income: updatedIncome,
         };
 
-        const newShifts = prev.map((shift) =>
+        // Update Supabase with the changed shift
+        supabase
+          .from('shifts')
+          .update({
+            startTime: updatedShift.startTime,
+            endTime: updatedShift.endTime,
+            startDate: updatedShift.startDate,
+            endDate: updatedShift.endDate,
+            income: updatedShift.income,
+          })
+          .eq('id', updatedShift.id)
+          .then(({ error }) => {
+            if (error) {
+              console.error('Error updating shift:', error);
+            }
+          });
+
+        return prev.map((shift) =>
           shift.id === event.id ? updatedShift : shift
         );
-        localStorage.setItem('shifts', JSON.stringify(newShifts));
-        return newShifts;
       });
     },
-    []
+    [currentView]
   );
 
-  // Resize handler (similarly updating the shift details)
-  const resizeEvent = useCallback(({ event, start, end }) => {
+  // Update shift when resized
+  const resizeEvent = useCallback(async ({ event, start, end }) => {
     setShifts((prev) => {
       const existing = prev.find((shift) => shift.id === event.id);
       if (!existing) return prev;
@@ -167,11 +209,26 @@ export default function ShiftCalendar() {
         income: updatedIncome,
       };
 
-      const newShifts = prev.map((shift) =>
+      // Update Supabase with the resized shift
+      supabase
+        .from('shifts')
+        .update({
+          startTime: updatedShift.startTime,
+          endTime: updatedShift.endTime,
+          startDate: updatedShift.startDate,
+          endDate: updatedShift.endDate,
+          income: updatedShift.income,
+        })
+        .eq('id', updatedShift.id)
+        .then(({ error }) => {
+          if (error) {
+            console.error('Error resizing shift:', error);
+          }
+        });
+
+      return prev.map((shift) =>
         shift.id === event.id ? updatedShift : shift
       );
-      localStorage.setItem('shifts', JSON.stringify(newShifts));
-      return newShifts;
     });
   }, []);
 
@@ -186,6 +243,7 @@ export default function ShiftCalendar() {
         onEventDrop={moveEvent}
         onEventResize={resizeEvent}
         resizable
+        onView={(view) => setCurrentView(view)}
       />
     </div>
   );

@@ -53,8 +53,8 @@ export default function LoginPage() {
       }
     }
 
-    // 登录成功后跳转到 shift 页面
-    router.push('/shift');
+    // 登录成功后跳转到 home 页面
+    router.push('/home');
   };
 
   return (

@@ -1,22 +1,9 @@
 // src/app/barChart/page.tsx
 'use client';
-'use client';
 
-import React, { useState, useEffect } from 'react';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
-import { Bar } from 'react-chartjs-2';
-import { JobStatistics } from '../../types';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -51,9 +38,10 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const IncomeSummaryPage: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [data, setData] = useState<JobStatistics[]>([]);
-  const [selectedJob, setSelectedJob] = useState<string>('all');
+  const [shifts, setShifts] = useState<Shift[]>([]);
+  const [selectedJob, setSelectedJob] = useState<string>('すべて');
   const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -79,7 +67,7 @@ const IncomeSummaryPage: React.FC = () => {
     fetchData();
   }, []);
 
-  // Compute available years from the shifts data
+  // Compute available years from shifts data
   const years = Array.from(
     new Set(
       shifts.map((shift) => new Date(shift.endDate).getFullYear().toString())
@@ -151,7 +139,10 @@ const IncomeSummaryPage: React.FC = () => {
 
   // Compute unique jobs from shifts and prepend "すべて" for all workplaces combined
   const uniqueJobs = Array.from(new Set(shifts.map((shift) => shift.job)));
-  const jobOptions = ['すべて', ...uniqueJobs];
+  const jobOptions = [
+    'すべて',
+    ...uniqueJobs.filter((job) => job !== 'すべて'),
+  ];
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-gray-900">
@@ -195,22 +186,12 @@ const IncomeSummaryPage: React.FC = () => {
 
         {/* 仕事選択ボタン */}
         <div className="mb-8 flex flex-wrap justify-center space-x-4">
-          <button
-            onClick={() => setSelectedJob('all')}
-            className={`rounded-md px-4 py-2 transition ${
-              selectedJob === 'all'
-                ? 'bg-teal-600 text-white'
-                : 'bg-teal-300 text-teal-700 hover:bg-teal-400'
-            }`}
-          >
-            すべて
-          </button>
-          {data.map((item) => (
+          {jobOptions.map((job) => (
             <button
-              key={item.job}
-              onClick={() => setSelectedJob(item.job)}
+              key={job}
+              onClick={() => setSelectedJob(job)}
               className={`rounded-md px-4 py-2 transition ${
-                selectedJob === item.job
+                selectedJob === job
                   ? 'bg-teal-600 text-white'
                   : 'bg-teal-300 text-teal-700 hover:bg-teal-400'
               }`}
