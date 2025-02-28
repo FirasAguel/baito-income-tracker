@@ -4,6 +4,10 @@ import { useState, useEffect } from 'react';
 import { JobRate } from '../../types';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import supabase from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 
 interface Shift {
   id: number;
@@ -16,6 +20,7 @@ interface Shift {
   rate: number;
   nightRate: number;
   income: number;
+  user_id?: string | null;
 }
 
 export default function ShiftCalendar() {
@@ -29,43 +34,46 @@ export default function ShiftCalendar() {
     hours: 0,
     job: '',
   });
+  const [userId, setUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
-  // Combined useEffect for initializing state from localStorage
+  // Fetch user data, job rates, and shifts from Supabase
   useEffect(() => {
-    const savedJobRates = localStorage.getItem('jobRates');
-    if (savedJobRates) {
-      const parsedJobRates: JobRate[] = JSON.parse(savedJobRates);
-      setJobRates(parsedJobRates);
-      if (parsedJobRates.length > 0) {
-        setNewShift((prevState) => ({
-          ...prevState,
-          job: parsedJobRates[0].job,
-          rate: parsedJobRates[0].rate,
-          nightRate: parsedJobRates[0].nightRate,
-        }));
+    const fetchUserData = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        console.log('Current user ID:', user.id);
+        const { data: jobRatesData } = await supabase
+          .from('job_rates')
+          .select('*')
+          .eq('user_id', user.id);
+        if (jobRatesData) {
+          setJobRates(jobRatesData);
+          if (jobRatesData.length > 0) {
+            setNewShift((prevState) => ({
+              ...prevState,
+              job: jobRatesData[0].job,
+              rate: jobRatesData[0].rate,
+              nightRate: jobRatesData[0].nightRate,
+            }));
+            const { data: shiftsData } = await supabase
+              .from('shifts')
+              .select('*')
+              .eq('user_id', user.id);
+            if (shiftsData) setShifts(shiftsData);
+          }
+        }
+      } else {
+        console.error('User is not authenticated');
       }
-    }
-    const savedShifts = localStorage.getItem('shifts');
-    if (savedShifts) {
-      const parsedShifts: Shift[] = JSON.parse(savedShifts);
-      setShifts(parsedShifts);
-    }
+    };
+
+    fetchUserData();
   }, []);
-
-  // Update newShift when job changes
-  useEffect(() => {
-    if (newShift.job) {
-      const foundJob = jobRates.find((j) => j.job === newShift.job);
-      if (foundJob) {
-        setNewShift((prev) => ({
-          ...prev,
-          rate: foundJob.rate,
-          nightRate: foundJob.nightRate,
-        }));
-      }
-    }
-  }, [newShift.job, jobRates]);
 
   // Helper functions
   const calculateWorkHours = (startTime: string, endTime: string): number => {
@@ -78,8 +86,7 @@ export default function ShiftCalendar() {
   // Calculate end time (出勤時間 + 勤務時間)
   const calculateEndTime = (startTime: string, hours: number): string => {
     const start = new Date(startTime);
-    const totalMinutes = hours * 60;
-    start.setMinutes(start.getMinutes() + totalMinutes);
+    start.setMinutes(start.getMinutes() + hours * 60);
     return start
       .toLocaleString('ja-JP', {
         hour12: false,
@@ -95,8 +102,7 @@ export default function ShiftCalendar() {
   // Calculate start time (退社時間 - 勤務時間)
   const calculateStartTime = (endTime: string, hours: number): string => {
     const end = new Date(endTime);
-    const totalMinutes = hours * 60;
-    end.setMinutes(end.getMinutes() - totalMinutes);
+    end.setMinutes(end.getMinutes() - hours * 60);
     return end
       .toLocaleString('ja-JP', {
         hour12: false,
@@ -133,7 +139,15 @@ export default function ShiftCalendar() {
     return Math.round(totalIncome);
   };
 
-  const addShift = () => {
+  // Format date string to JST
+  const formatToJST = (dateStr: string): string => {
+    const dt = new Date(dateStr);
+    return dt
+      .toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
+      .replace(',', '');
+  };
+
+  const addShift = async () => {
     if (!newShift.job) {
       setError('勤務先を選択してください');
       return;
@@ -145,11 +159,23 @@ export default function ShiftCalendar() {
     }
     const rate = selectedJob.rate;
     const nightRate = selectedJob.nightRate;
+    // Get the next shift id from Supabase
+    const { data: existingShifts } = await supabase
+      .from('shifts')
+      .select('id')
+      .order('id', { ascending: false })
+      .limit(1);
+    const nextId =
+      existingShifts && existingShifts.length > 0
+        ? existingShifts[0].id + 1
+        : 1;
     let shift: Shift | null = null;
 
     if (newShift.startTime && newShift.endTime) {
       // Case 1: Both start and end times are provided.
       const hours = calculateWorkHours(newShift.startTime, newShift.endTime);
+      const startTimeFormatted = formatToJST(newShift.startTime);
+      const endTimeFormatted = formatToJST(newShift.endTime);
       const income = calculateIncome(
         newShift.startTime,
         newShift.endTime,
@@ -157,58 +183,69 @@ export default function ShiftCalendar() {
         nightRate
       );
       shift = {
-        id: Date.now(),
+        id: nextId,
         startDate: newShift.startTime.split('T')[0],
         endDate: newShift.endTime.split('T')[0],
         job: newShift.job,
         hours,
-        startTime: newShift.startTime,
-        endTime: newShift.endTime,
+        startTime: startTimeFormatted,
+        endTime: endTimeFormatted,
         rate,
         nightRate,
         income,
+        user_id: userId,
       };
     } else if (newShift.startTime && newShift.hours) {
-      // Case 2: Start time and work hours provided.
-      const endTime = calculateEndTime(newShift.startTime, newShift.hours);
+      const calculatedEndTime = calculateEndTime(
+        newShift.startTime,
+        newShift.hours
+      );
+      const startTimeFormatted = formatToJST(newShift.startTime);
+      const endTimeFormatted = formatToJST(calculatedEndTime);
       const income = calculateIncome(
         newShift.startTime,
-        endTime,
+        calculatedEndTime,
         rate,
         nightRate
       );
       shift = {
-        id: Date.now(),
+        id: nextId,
         startDate: newShift.startTime.split('T')[0],
-        endDate: endTime.split(' ')[0].replace(/\//g, '-'),
+        endDate: calculatedEndTime.split(' ')[0].replace(/\//g, '-'),
         job: newShift.job,
         hours: newShift.hours,
-        startTime: newShift.startTime,
-        endTime,
+        startTime: startTimeFormatted,
+        endTime: endTimeFormatted,
         rate,
         nightRate,
         income,
+        user_id: userId,
       };
     } else if (newShift.endTime && newShift.hours) {
-      // Case 3: End time and work hours provided.
-      const startTime = calculateStartTime(newShift.endTime, newShift.hours);
+      const calculatedStartTime = calculateStartTime(
+        newShift.endTime,
+        newShift.hours
+      );
+      const startTimeFormatted = formatToJST(calculatedStartTime);
+      const endTimeFormatted = formatToJST(newShift.endTime);
       const income = calculateIncome(
-        startTime,
+        calculatedStartTime,
         newShift.endTime,
         rate,
         nightRate
       );
       shift = {
-        id: Date.now(),
-        startDate: startTime.split(' ')[0].replace(/\//g, '-'),
+        id: nextId,
+        startDate: calculatedStartTime.split(' ')[0].replace(/\//g, '-'),
         endDate: newShift.endTime.split('T')[0],
         job: newShift.job,
         hours: newShift.hours,
-        startTime,
-        endTime: newShift.endTime,
+        startTime: startTimeFormatted,
+        endTime: endTimeFormatted,
         rate,
         nightRate,
         income,
+        user_id: userId,
       };
     } else {
       setError(
@@ -216,9 +253,23 @@ export default function ShiftCalendar() {
       );
       return;
     }
-    const updatedShifts = [...shifts, shift];
-    setShifts(updatedShifts);
-    localStorage.setItem('shifts', JSON.stringify(updatedShifts));
+
+    const { data, error: insertError } = await supabase
+      .from('shifts')
+      .insert([shift]);
+    if (insertError) {
+      console.error(insertError);
+      setError('シフトの追加に失敗しました。');
+      return;
+    }
+    // Refresh shifts list
+    const { data: shiftsData } = await supabase
+      .from('shifts')
+      .select('*')
+      .eq('user_id', userId);
+    if (shiftsData) {
+      setShifts(shiftsData);
+    }
     setNewShift({
       startTime: '',
       endTime: '',
@@ -228,13 +279,19 @@ export default function ShiftCalendar() {
     setError(null);
   };
 
-  const deleteShift = (id: number) => {
-    const updatedShifts = shifts.filter((shift) => shift.id !== id);
-    setShifts(updatedShifts);
-    localStorage.setItem('shifts', JSON.stringify(updatedShifts));
+  const deleteShift = async (id: number) => {
+    const { error: deleteError } = await supabase
+      .from('shifts')
+      .delete()
+      .eq('id', id);
+    if (deleteError) {
+      setError('シフトの削除に失敗しました。');
+      return;
+    }
+    setShifts(shifts.filter((shift) => shift.id !== id));
   };
 
-  const formatTimeDisplay = (time: string) => {
+  const formatTimeDisplay = (time: string): string => {
     const date = new Date(time);
     return date
       .toLocaleString('ja-JP', {
@@ -248,7 +305,7 @@ export default function ShiftCalendar() {
       .replace(',', '');
   };
 
-  const formatHours = (hours: number) => {
+  const formatHours = (hours: number): string => {
     const h = Math.floor(hours);
     const m = Math.round((hours - h) * 60);
     return `${h}時間${m}分`;
@@ -257,37 +314,109 @@ export default function ShiftCalendar() {
   return (
     <div className="container mx-auto py-10">
       <Navbar onMenuToggle={setMenuOpen} />
-      {/*<main className={`transition-all ${menuOpen ? 'mt-76' : ''} p-6`}></main>*/}
-      <h1 className="mb-4 text-2xl font-bold">シフト管理カレンダー</h1>
-      <Link href="/">
-        <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">
-          戻る
-        </button>
-      </Link>
-      {error && <div className="mb-4 text-red-500">{error}</div>}
-      <main
-        className={`container mx-auto py-10 transition-all ${menuOpen ? 'mt-88' : 'mt-12'} px-4`}
-      >
-        <Link href="/">
-          <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">
-            戻る
-          </button>
-        </Link>
+      <main className={`transition-all ${menuOpen ? 'mt-88' : 'mt-12'} px-6`}>
+        <h1 className="mb-4 text-2xl font-bold">シフト一覧</h1>
+        <div className="mb-4 flex flex-wrap gap-2">
+          <Link href="/">
+            <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">
+              戻る
+            </button>
+          </Link>
+          <Link href="/logout">
+            <button className="rounded bg-gray-500 px-4 py-2 text-white">
+              logout
+            </button>
+          </Link>
+        </div>
+        <ToastContainer position="top-right" autoClose={5000} />
         {error && <div className="mb-4 text-red-500">{error}</div>}
+        {/* Shift Input Form */}
         <div className="mb-6 flex flex-wrap items-center justify-center gap-4">
-          <select className="w-full max-w-xs border border-teal-500 p-2 text-teal-700 focus:ring-2 focus:ring-teal-500 focus:outline-none" />
+          <select
+            className="w-full max-w-xs border border-teal-500 p-2 text-teal-700 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+            value={newShift.job || ''}
+            onChange={(e) => setNewShift({ ...newShift, job: e.target.value })}
+          >
+            {jobRates.map((job) => (
+              <option key={job.job} value={job.job}>
+                {job.job}
+              </option>
+            ))}
+          </select>
           <input
             type="datetime-local"
+            placeholder="出勤時間"
             className="w-full max-w-xs border border-teal-500 p-2 text-teal-700 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+            value={newShift.startTime || ''}
+            onChange={(e) =>
+              setNewShift({ ...newShift, startTime: e.target.value })
+            }
+          />
+          <input
+            type="datetime-local"
+            placeholder="退勤時間"
+            className="w-full max-w-xs border border-teal-500 p-2 text-teal-700 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+            value={newShift.endTime || ''}
+            onChange={(e) =>
+              setNewShift({ ...newShift, endTime: e.target.value })
+            }
           />
           <input
             type="number"
+            placeholder="勤務時間"
             className="w-full max-w-xs border border-teal-500 p-2 text-teal-700 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+            value={newShift.hours || ''}
+            onChange={(e) =>
+              setNewShift({ ...newShift, hours: Number(e.target.value) })
+            }
           />
-          <button className="w-full max-w-xs rounded bg-blue-500 px-4 py-2 text-white">
+          <button
+            onClick={addShift}
+            className="w-20 max-w-xs rounded bg-blue-500 px-4 py-2 text-white"
+          >
             追加
           </button>
         </div>
+        {/* Shifts List Table */}
+        <table className="min-w-full table-auto">
+          <thead>
+            <tr className="bg-gray-200">
+              <th className="px-4 py-2">日付</th>
+              <th className="px-4 py-2">勤務先</th>
+              <th className="px-4 py-2">出勤時間</th>
+              <th className="px-4 py-2">退勤時間</th>
+              <th className="px-4 py-2">勤務時間 (h)</th>
+              <th className="px-4 py-2">収入 (¥)</th>
+              <th className="px-4 py-2">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {shifts.map((shift) => (
+              <tr key={shift.id} className="border-b">
+                <td className="px-4 py-2 text-center">{shift.startDate}</td>
+                <td className="px-4 py-2 text-center">{shift.job}</td>
+                <td className="px-4 py-2 text-center">
+                  {formatTimeDisplay(shift.startTime)}
+                </td>
+                <td className="px-4 py-2 text-center">
+                  {formatTimeDisplay(shift.endTime)}
+                </td>
+                <td className="px-4 py-2 text-center">
+                  {formatHours(shift.hours)}
+                </td>
+                <td className="px-4 py-2 text-center">{shift.income}</td>
+                <td className="px-4 py-2 text-center">
+                  <button
+                    onClick={() => deleteShift(shift.id)}
+                    className="rounded bg-red-500 px-3 py-1 text-white"
+                  >
+                    削除
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </main>
     </div>
   );
