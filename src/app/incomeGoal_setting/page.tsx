@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Navbar from '@/components/Navbar';
 
 interface IncomeGoal {
   year: string;
@@ -11,6 +12,7 @@ interface IncomeGoal {
 
 export default function IncomeGoalSetting() {
   const currentYear = new Date().getFullYear();
+  const [menuOpen, setMenuOpen] = useState(false);
   const [incomeGoalData, setIncomeGoalData] = useState<IncomeGoal>({
     year: currentYear.toString(),
     incomeGoal: 0,
@@ -60,53 +62,58 @@ export default function IncomeGoalSetting() {
   );
 
   return (
-    <div className="container mx-auto py-10">
-      <h1 className="mb-4 text-2xl font-bold">年収目標設定</h1>
-      <Link href="/">
-        <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">
-          戻る
-        </button>
-      </Link>
-      {message && <div className="mb-4 text-green-500">{message}</div>}
-
-      <div className="mb-6 flex flex-col space-y-4">
-        <div className="flex items-center space-x-2">
-          <label htmlFor="yearSelect" className="text-lg">
-            年を選択:
-          </label>
-          <select
-            id="yearSelect"
-            value={incomeGoalData.year}
-            onChange={handleYearChange}
-            className="border p-2"
-          >
-            {years.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex items-center space-x-2">
-          <label htmlFor="incomeGoalInput" className="text-lg">
-            収入目標:
-          </label>
-          <input
-            id="incomeGoalInput"
-            type="number"
-            value={incomeGoalData.incomeGoal}
-            onChange={handleIncomeChange}
-            className="w-24 border p-2"
-          />
-          <span>万円</span>
-        </div>
-      </div>
-      <button
-        onClick={handleSave}
-        className="rounded bg-blue-500 px-4 py-2 text-white"
+    <div className="flex min-h-screen flex-col bg-white text-gray-900">
+      <Navbar onMenuToggle={setMenuOpen} />
+      <main
+        className={`container mx-auto py-10 transition-all ${menuOpen ? 'mt-88' : 'mt-12'} px-4`}
       >
-        保存
-      </button>
+        <h1 className="mb-4 text-2xl font-bold">年収目標設定</h1>
+        <Link href="/">
+          <button className="mb-4 rounded bg-teal-500 px-4 py-2 text-white">
+            戻る
+          </button>
+        </Link>
+        {message && <div className="mb-4 text-green-500">{message}</div>}
+
+        <div className="mb-6 flex flex-col space-y-4">
+          <div className="flex items-center space-x-2">
+            <label htmlFor="yearSelect" className="text-lg">
+              年を選択:
+            </label>
+            <select
+              id="yearSelect"
+              value={incomeGoalData.year}
+              onChange={handleYearChange}
+              className="border border-teal-500 p-2 text-teal-700 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+            >
+              {years.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center space-x-2">
+            <label htmlFor="incomeGoalInput" className="text-lg">
+              収入目標:
+            </label>
+            <input
+              id="incomeGoalInput"
+              type="number"
+              value={incomeGoalData.incomeGoal}
+              onChange={handleIncomeChange}
+              className="w-24 border border-teal-500 p-2 text-teal-700 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+            />
+            <span>万円</span>
+          </div>
+        </div>
+        <button
+          onClick={handleSave}
+          className="rounded bg-teal-500 px-4 py-2 text-white"
+        >
+          保存
+        </button>
+      </main>
     </div>
   );
 }
