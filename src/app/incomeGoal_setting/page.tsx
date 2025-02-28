@@ -29,7 +29,7 @@ export default function IncomeGoalSetting() {
         error,
       } = await supabase.auth.getUser();
       if (error) {
-        console.error('Error fetching user:', error);
+        console.error('Error fetching user:', error.message);
       }
       if (user) {
         setUserId(user.id);
@@ -117,7 +117,7 @@ export default function IncomeGoalSetting() {
         },
       ]);
       if (error) {
-        console.error('Error saving income goal:', error);
+        console.error('Error saving income goal:', error.message);
         setMessage('保存に失敗しました');
       } else {
         setMessage('保存しました');
