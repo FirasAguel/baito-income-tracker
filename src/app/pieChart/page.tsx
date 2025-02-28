@@ -3,9 +3,16 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { JobStatistics, IncomeGoal } from '../../types';
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { createClient } from '@supabase/supabase-js';
+
+// You may have a Shift type defined in your types file, but here's a minimal version:
+type Shift = {
+  id: number;
+  endDate: string;
+  income: number;
+  job: string;
+};
 
 type IncomeGoalMapping = { [year: string]: number };
 
@@ -27,7 +34,7 @@ const COLORS = [
 const PieChartPage: React.FC = () => {
   const [incomeGoalData, setIncomeGoalData] =
     useState<IncomeGoalMapping | null>(null);
-  const [jobStatistics, setJobStatistics] = useState<JobStatistics[]>([]);
+  const [shifts, setShifts] = useState<Shift[]>([]);
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -38,13 +45,14 @@ const PieChartPage: React.FC = () => {
       } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
+        // Fetch income goals for the user
         const { data: incomeGoalsData, error: incomeGoalsError } =
           await supabase
             .from('income_goals')
             .select('*')
             .eq('user_id', user.id);
         if (incomeGoalsError) {
-          console.error('从 Supabase 获取收入目标数据出错:', incomeGoalsError);
+          console.error('Error fetching income goals:', incomeGoalsError);
         }
 
         const incomeGoals: IncomeGoalMapping = {};
@@ -55,36 +63,43 @@ const PieChartPage: React.FC = () => {
         }
         setIncomeGoalData(incomeGoals);
 
-        const { data: jobStatsData, error: jobStatsError } = await supabase
-          .from('job_statistics')
+        // Fetch raw shifts for the user
+        const { data: shiftsData, error: shiftsError } = await supabase
+          .from('shifts')
           .select('*')
           .eq('user_id', user.id);
-        if (jobStatsError) {
-          console.error('从 Supabase 获取工作统计数据出错:', jobStatsError);
+        if (shiftsError) {
+          console.error('Error fetching shifts:', shiftsError);
         }
-        setJobStatistics(jobStatsData as JobStatistics[]);
+        if (shiftsData) {
+          setShifts(shiftsData as Shift[]);
+        }
 
-        const allYears = [
-          ...new Set([
-            ...Object.keys(incomeGoals),
-            ...((jobStatsData as JobStatistics[]) || []).flatMap((job) =>
-              Object.keys(job.yearly.income)
-            ),
-          ]),
-        ].sort();
-
+        // Determine available years from income goals and shifts
+        const shiftYears = shiftsData
+          ? Array.from(
+              new Set(
+                shiftsData.map((shift: Shift) =>
+                  new Date(shift.endDate).getFullYear().toString()
+                )
+              )
+            )
+          : [];
+        const availableYears = Array.from(
+          new Set([...Object.keys(incomeGoals), ...shiftYears])
+        ).sort();
         const currentYear = new Date().getFullYear().toString();
-        if (allYears.includes(currentYear)) {
+        if (availableYears.includes(currentYear)) {
           setSelectedYear(currentYear);
-        } else if (allYears.length > 0) {
-          setSelectedYear(allYears[0]);
+        } else if (availableYears.length > 0) {
+          setSelectedYear(availableYears[0]);
         }
       }
     };
     fetchUserData();
   }, []);
 
-  if (!incomeGoalData || jobStatistics.length === 0 || !selectedYear) {
+  if (!incomeGoalData || shifts.length === 0 || !selectedYear) {
     return (
       <div className="flex h-screen items-center justify-center text-xl">
         Loading...
@@ -92,33 +107,35 @@ const PieChartPage: React.FC = () => {
     );
   }
 
-  const availableYears = [
-    ...new Set([
-      ...Object.keys(incomeGoalData),
-      ...jobStatistics.flatMap((job) => Object.keys(job.yearly.income)),
-    ]),
-  ].sort();
+  // Compute available years for the buttons
+  const shiftYears = shifts.map((shift) =>
+    new Date(shift.endDate).getFullYear().toString()
+  );
+  const availableYears = Array.from(
+    new Set([...Object.keys(incomeGoalData), ...shiftYears])
+  ).sort();
 
   const incomeGoal =
-    selectedYear in incomeGoalData
-      ? incomeGoalData[selectedYear as keyof IncomeGoal]
-      : 0;
+    selectedYear in incomeGoalData ? incomeGoalData[selectedYear] : 0;
   const numericIncomeGoal =
     typeof incomeGoal === 'string' ? Number(incomeGoal) : incomeGoal;
 
-  // Filter out the special "all" record from individual jobs
-  const individualJobs = jobStatistics.filter((job) => job.job !== 'all');
+  // Filter shifts for the selected year
+  const shiftsInYear = shifts.filter(
+    (shift) => new Date(shift.endDate).getFullYear().toString() === selectedYear
+  );
 
-  // Aggregate income for each unique job by summing the income for the selected year
-  const aggregatedJobs = individualJobs.reduce(
-    (acc: Record<string, number>, job) => {
-      const income = job.yearly.income[selectedYear] || 0;
-      acc[job.job] = (acc[job.job] || 0) + income;
+  // Aggregate income for each unique job from shiftsInYear
+  const aggregatedJobs = shiftsInYear.reduce(
+    (acc: Record<string, number>, shift) => {
+      const income = Number(shift.income) || 0;
+      acc[shift.job] = (acc[shift.job] || 0) + income;
       return acc;
     },
     {}
   );
 
+  // Build pie chart data
   const aggregatedPieData = Object.entries(aggregatedJobs).map(
     ([job, income]) => ({
       name: job,
@@ -130,27 +147,21 @@ const PieChartPage: React.FC = () => {
     })
   );
 
-  // Calculate total income from aggregated jobs
-  const totalJobIncome = Object.values(aggregatedJobs).reduce(
-    (acc, cur) => acc + cur,
+  // Total income from all shifts for the year
+  const totalAllJobsIncome = shiftsInYear.reduce(
+    (acc, shift) => acc + (Number(shift.income) || 0),
     0
   );
 
-  // Add a slice for remaining income if there's a gap between target and aggregated income
-  if (numericIncomeGoal > totalJobIncome) {
-    const remainingIncome = numericIncomeGoal - totalJobIncome;
+  // If the total income is less than the target, add a slice for the remaining target
+  if (numericIncomeGoal > totalAllJobsIncome) {
+    const remainingIncome = numericIncomeGoal - totalAllJobsIncome;
     aggregatedPieData.push({
       name: '未達成',
       income: remainingIncome,
       percentage: ((remainingIncome / numericIncomeGoal) * 100).toFixed(2),
     });
   }
-
-  // Keep the overall total from the "all" record
-  const allJobsRecord = jobStatistics.find((job) => job.job === 'all');
-  const totalAllJobsIncome = allJobsRecord
-    ? allJobsRecord.yearly.income[selectedYear] || 0
-    : 0;
 
   return (
     <div className="flex flex-col items-center justify-center p-4">
@@ -179,7 +190,7 @@ const PieChartPage: React.FC = () => {
       </div>
 
       <h2 className="mb-4 text-2xl font-bold">目標金額：{incomeGoal}円</h2>
-      <PieChart width={400} height={400}>
+      <PieChart width={800} height={600}>
         <Pie
           data={aggregatedPieData}
           dataKey="income"
