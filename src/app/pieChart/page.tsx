@@ -176,7 +176,7 @@ const PieChartPage: React.FC = () => {
         className={`container mx-auto py-10 transition-all ${menuOpen ? 'mt-88' : 'mt-12'} px-4`}
       >
         <h1 className="mb-6 text-center text-3xl font-semibold">給料見込</h1>
-        <Link href="/">
+        <Link href="/home">
           <button className="mb-4 rounded bg-teal-500 px-4 py-2 text-white">
             戻る
           </button>

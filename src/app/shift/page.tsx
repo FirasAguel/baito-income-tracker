@@ -329,7 +329,7 @@ export default function ShiftCalendar() {
       <main className={`transition-all ${menuOpen ? 'mt-88' : 'mt-12'} px-6`}>
         <h1 className="mb-4 text-2xl font-bold">シフト一覧</h1>
         <div className="mb-4 flex flex-wrap gap-2">
-          <Link href="/">
+          <Link href="/home">
             <button className="mb-4 rounded bg-teal-500 px-4 py-2 text-white">
               戻る
             </button>
