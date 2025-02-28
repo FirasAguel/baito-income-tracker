@@ -22,24 +22,30 @@ export default function JobSettings() {
     if (savedJobRates) {
       const parsedJobRates = JSON.parse(savedJobRates).map((job: JobRate) => ({
         ...job,
-        rate: Number(job.rate) || 0, 
-        nightRate: Math.round(Number(job.nightRate)) || Math.round(Number(job.rate) * 1.25),
+        rate: Number(job.rate) || 0,
+        nightRate:
+          Math.round(Number(job.nightRate)) ||
+          Math.round(Number(job.rate) * 1.25),
       }));
       setJobRates(parsedJobRates);
     } else {
       setJobRates([
         { id: 1, job: 'コンビニ', rate: 1200, nightRate: 1200 * 1.25 },
-        { id: 2, job: 'カフェ', rate: 1300, nightRate: 1300 * 1.25},
+        { id: 2, job: 'カフェ', rate: 1300, nightRate: 1300 * 1.25 },
       ]);
     }
   }, []);
 
   const addJobRate = () => {
     if (newJob && newRate) {
-      const newId = jobRates.length > 0 ? jobRates[jobRates.length - 1].id + 1 : 1;
-      const rate = Number(newRate) || 0; 
+      const newId =
+        jobRates.length > 0 ? jobRates[jobRates.length - 1].id + 1 : 1;
+      const rate = Number(newRate) || 0;
       const nightRate = Math.round(rate * 1.25);
-      const updatedJobRates = [...jobRates, { id: newId, job: newJob, rate, nightRate}];
+      const updatedJobRates = [
+        ...jobRates,
+        { id: newId, job: newJob, rate, nightRate },
+      ];
       setJobRates(updatedJobRates);
       localStorage.setItem('jobRates', JSON.stringify(updatedJobRates));
       setNewJob('');
@@ -60,7 +66,9 @@ export default function JobSettings() {
     <div className="container mx-auto py-10">
       <h1 className="mb-4 text-2xl font-bold">勤務先と時給設定</h1>
       <Link href="/">
-        <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">戻る</button>
+        <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">
+          戻る
+        </button>
       </Link>
       {error && <div className="mb-4 text-red-500">{error}</div>}
 
@@ -75,7 +83,7 @@ export default function JobSettings() {
         <input
           type="number"
           placeholder="時給"
-          className="mr-2 border p-2 w-24"
+          className="mr-2 w-24 border p-2"
           value={newRate}
           onChange={(e) => setNewRate(Number(e.target.value) || '')}
         />

@@ -12,7 +12,7 @@ interface Shift {
   job: string;
   hours: number;
   startTime: string; // 出勤時間
-  endTime: string;   // 退社時間
+  endTime: string; // 退社時間
   rate: number;
   nightRate: number;
   income: number;
@@ -75,55 +75,65 @@ export default function ShiftCalendar() {
   // 退社時間を計算する関数（出勤時間 + 勤務時間）
   const calculateEndTime = (startTime: string, hours: number): string => {
     const start = new Date(startTime);
-    const totalMinutes = hours * 60; 
-    start.setMinutes(start.getMinutes() + totalMinutes); 
-    return start.toLocaleString('ja-JP', {
-      hour12: false, 
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).replace(',', '');
+    const totalMinutes = hours * 60;
+    start.setMinutes(start.getMinutes() + totalMinutes);
+    return start
+      .toLocaleString('ja-JP', {
+        hour12: false,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+      .replace(',', '');
   };
 
   // 出勤時間を計算する関数（退社時間 - 勤務時間）
   const calculateStartTime = (endTime: string, hours: number): string => {
     const end = new Date(endTime);
-    const totalMinutes = hours * 60; 
+    const totalMinutes = hours * 60;
     end.setMinutes(end.getMinutes() - totalMinutes);
-    return end.toLocaleString('ja-JP', {
-      hour12: false, 
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).replace(',', '');
+    return end
+      .toLocaleString('ja-JP', {
+        hour12: false,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+      .replace(',', '');
   };
 
-  const calculateIncome = (startTime: string, endTime: string, rate: number, nightRate: number): number => {
+  const calculateIncome = (
+    startTime: string,
+    endTime: string,
+    rate: number,
+    nightRate: number
+  ): number => {
     const start = new Date(startTime);
     const end = new Date(endTime);
     let totalIncome = 0;
-  
+
     while (start < end) {
       const currentHour = start.getHours();
       const currentMinute = start.getMinutes();
-  
+
       const isNightTime =
-        (currentHour > 22 || (currentHour === 22 && currentMinute >= 0)) || 
-        (currentHour < 4 || (currentHour === 4 && currentMinute <= 59));  
-  
+        currentHour > 22 ||
+        (currentHour === 22 && currentMinute >= 0) ||
+        currentHour < 4 ||
+        (currentHour === 4 && currentMinute <= 59);
+
       const currentRate = isNightTime ? nightRate : rate;
-      totalIncome += currentRate / 60; 
-  
+      totalIncome += currentRate / 60;
+
       start.setMinutes(start.getMinutes() + 1);
     }
-  
-    return Math.round(totalIncome); 
-  };
 
+    return Math.round(totalIncome);
+  };
 
   const addShift = () => {
     // 勤務先が入力されていない場合、エラーを表示して処理を中断
@@ -141,11 +151,16 @@ export default function ShiftCalendar() {
     const rate = selectedJob.rate;
     const nightRate = selectedJob.nightRate;
     let shift: Shift | null = null;
-  
+
     if (newShift.startTime && newShift.endTime) {
       // ケース1：出勤時間と退社時間が入力されている場合、勤務時間を計算する
       const hours = calculateWorkHours(newShift.startTime, newShift.endTime);
-      const income = calculateIncome(newShift.startTime, newShift.endTime, rate, nightRate);
+      const income = calculateIncome(
+        newShift.startTime,
+        newShift.endTime,
+        rate,
+        nightRate
+      );
       shift = {
         id: Date.now(),
         startDate: newShift.startTime.split('T')[0],
@@ -161,11 +176,16 @@ export default function ShiftCalendar() {
     } else if (newShift.startTime && newShift.hours) {
       // ケース2：出勤時間と勤務時間が入力されている場合、退社時間を計算する
       const endTime = calculateEndTime(newShift.startTime, newShift.hours);
-      const income = calculateIncome(newShift.startTime, endTime, rate, nightRate);
+      const income = calculateIncome(
+        newShift.startTime,
+        endTime,
+        rate,
+        nightRate
+      );
       shift = {
         id: Date.now(),
         startDate: newShift.startTime.split('T')[0],
-        endDate: endTime.split(' ')[0].replace(/\//g,"-"),
+        endDate: endTime.split(' ')[0].replace(/\//g, '-'),
         job: newShift.job,
         hours: newShift.hours,
         startTime: newShift.startTime,
@@ -177,10 +197,15 @@ export default function ShiftCalendar() {
     } else if (newShift.endTime && newShift.hours) {
       // ケース3：退社時間と勤務時間が入力されている場合、出勤時間を計算する
       const startTime = calculateStartTime(newShift.endTime, newShift.hours);
-      const income = calculateIncome(startTime, newShift.endTime, rate, nightRate);
+      const income = calculateIncome(
+        startTime,
+        newShift.endTime,
+        rate,
+        nightRate
+      );
       shift = {
         id: Date.now(),
-        startDate: startTime.split(' ')[0].replace(/\//g,"-"),
+        startDate: startTime.split(' ')[0].replace(/\//g, '-'),
         endDate: newShift.endTime.split('T')[0],
         job: newShift.job,
         hours: newShift.hours,
@@ -192,13 +217,20 @@ export default function ShiftCalendar() {
       };
     } else {
       // 必要な2つの項目が入力されていない場合、エラーを表示する
-      setError('勤務先とともに、出勤時間、退社時間、または勤務時間のうち2つを入力してください。');
+      setError(
+        '勤務先とともに、出勤時間、退社時間、または勤務時間のうち2つを入力してください。'
+      );
       return;
     }
     const updatedShifts = [...shifts, shift];
     setShifts(updatedShifts);
     localStorage.setItem('shifts', JSON.stringify(updatedShifts));
-    setNewShift({ startTime: '', endTime: '', hours: 0, job: jobRates[0]?.job || '' });
+    setNewShift({
+      startTime: '',
+      endTime: '',
+      hours: 0,
+      job: jobRates[0]?.job || '',
+    });
     setError(null);
   };
 
@@ -210,14 +242,16 @@ export default function ShiftCalendar() {
 
   const formatTimeDisplay = (time: string) => {
     const date = new Date(time);
-    return date.toLocaleString('ja-JP', {
-      hour12: false, 
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).replace(',', ''); 
+    return date
+      .toLocaleString('ja-JP', {
+        hour12: false,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+      .replace(',', '');
   };
   const formatHours = (hours: number) => {
     const h = Math.floor(hours);
@@ -229,27 +263,33 @@ export default function ShiftCalendar() {
     <div className="container mx-auto py-10">
       <h1 className="mb-4 text-2xl font-bold">シフト管理カレンダー</h1>
       <Link href="/">
-        <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">戻る</button>
+        <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">
+          戻る
+        </button>
       </Link>
       {error && <div className="mb-4 text-red-500">{error}</div>}
 
       {/* シフト入力フォーム */}
       <div className="mb-6">
-      <select
+        <select
           className="mr-2 border p-2"
           value={newShift.job || ''}
           onChange={(e) => setNewShift({ ...newShift, job: e.target.value })}
         >
           {jobRates.map((job) => (
-            <option key={job.job} value={job.job}>{job.job}</option>
+            <option key={job.job} value={job.job}>
+              {job.job}
+            </option>
           ))}
         </select>
-         <input
+        <input
           type="datetime-local"
           placeholder="出勤時間"
           className="mr-2 border p-2"
           value={newShift.startTime || ''}
-          onChange={(e) => setNewShift({ ...newShift, startTime: e.target.value})}
+          onChange={(e) =>
+            setNewShift({ ...newShift, startTime: e.target.value })
+          }
         />
         {/* 退社時間が入力されていなければ勤務時間を入力 */}
         <input
@@ -257,7 +297,9 @@ export default function ShiftCalendar() {
           placeholder="退勤時間"
           className="mr-2 border p-2"
           value={newShift.endTime || ''}
-          onChange={e => setNewShift({ ...newShift, endTime: e.target.value})}
+          onChange={(e) =>
+            setNewShift({ ...newShift, endTime: e.target.value })
+          }
         />
         {/* 勤務時間が入力されていなければ退社時間を入力 */}
         <input
@@ -265,7 +307,9 @@ export default function ShiftCalendar() {
           placeholder="勤務時間"
           className="mr-2 w-24 border p-2"
           value={newShift.hours || ''}
-          onChange={e => setNewShift({ ...newShift, hours: Number(e.target.value)})}
+          onChange={(e) =>
+            setNewShift({ ...newShift, hours: Number(e.target.value) })
+          }
         />
         <button
           onClick={addShift}
@@ -293,9 +337,15 @@ export default function ShiftCalendar() {
             <tr key={shift.id} className="border-b">
               <td className="px-4 py-2 text-center">{shift.startDate}</td>
               <td className="px-4 py-2 text-center">{shift.job}</td>
-              <td className="px-4 py-2 text-center">{formatTimeDisplay(shift.startTime)}</td>
-              <td className="px-4 py-2 text-center">{formatTimeDisplay(shift.endTime)}</td>
-              <td className="px-4 py-2 text-center">{formatHours(shift.hours)}</td>
+              <td className="px-4 py-2 text-center">
+                {formatTimeDisplay(shift.startTime)}
+              </td>
+              <td className="px-4 py-2 text-center">
+                {formatTimeDisplay(shift.endTime)}
+              </td>
+              <td className="px-4 py-2 text-center">
+                {formatHours(shift.hours)}
+              </td>
               <td className="px-4 py-2 text-center">{shift.income}</td>
               <td className="px-4 py-2 text-center">
                 <button
