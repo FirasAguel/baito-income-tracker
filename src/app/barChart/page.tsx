@@ -75,7 +75,7 @@ const IncomeSummaryPage: React.FC = () => {
   );
 
   // Build a set of months (formatted as "YYYY-MM") for shifts that match the selected year (or all years if 'all')
-  let monthsSet = new Set<string>();
+  const monthsSet = new Set<string>();
   shifts.forEach((shift) => {
     const date = new Date(shift.endDate);
     const monthStr = `${date.getFullYear()}-${(date.getMonth() + 1)

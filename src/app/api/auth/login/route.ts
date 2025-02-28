@@ -8,7 +8,6 @@
 
 import { NextResponse, NextRequest } from 'next/server';
 import supabase from '@/lib/supabase';
-import { access } from 'fs';
 
 export async function POST(request: NextRequest) {
   try {

@@ -90,7 +90,7 @@ export default function IncomeGoalSetting() {
   const handleSave = async () => {
     // Update localStorage
     const storedData = localStorage.getItem('incomeGoals');
-    let incomeGoals: { [key: string]: number } = storedData
+    const incomeGoals: { [key: string]: number } = storedData
       ? JSON.parse(storedData)
       : {};
     if (incomeGoalData.incomeGoal === 0) {
