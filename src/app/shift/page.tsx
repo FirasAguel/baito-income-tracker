@@ -334,11 +334,6 @@ export default function ShiftCalendar() {
               戻る
             </button>
           </Link>
-          <Link href="/logout">
-            <button className="rounded bg-teal-500 px-4 py-2 text-white">
-              logout
-            </button>
-          </Link>
         </div>
         <ToastContainer position="top-right" autoClose={5000} />
         {error && <div className="mb-4 text-red-500">{error}</div>}

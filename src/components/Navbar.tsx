@@ -59,6 +59,12 @@ export default function Navbar({
 
       <div className="flex-grow"></div>
 
+      <Link href="/logout">
+        <button className="rounded bg-white px-4 py-2 text-teal-500 hover:bg-teal-100">
+          ログアウト
+        </button>
+      </Link>
+
       {/* Mobile Menu Toggle */}
       <button className="md:hidden" onClick={toggleMenu}>
         🍔
