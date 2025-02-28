@@ -53,17 +53,7 @@ export async function GET(req: Request) {
       const job = jobRate.job;
       const jobShifts = shifts.filter((shift) => shift.job === job);
 
-      const { data: userProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('user_id') 
-        .eq('job', jobRate.job)  
-        .single();  
-
-      if (profileError) {
-        throw new Error(profileError.message);
-      }
-
-      const user_id = userProfile?.user_id || jobRate.user_id; 
+      const user_id = jobRate.user_id; // Directly using user_id from job_rates
 
       return {
         user_id, 
@@ -80,7 +70,7 @@ export async function GET(req: Request) {
     }));
 
     jobRates.forEach((jobRate) => {
-      const user_id = jobRate.user_id;
+      const user_id = jobRate.user_id; // Directly using user_id from job_rates
       const userShifts = shifts.filter((shift) => shift.user_id === user_id); 
     
       const allJobStats: JobStatistics = {
@@ -110,4 +100,3 @@ export async function GET(req: Request) {
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
-
