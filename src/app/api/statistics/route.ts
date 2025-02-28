@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import supabase from '@/lib/supabase';
 import { Shift, JobStatistics } from "../../../types";
+import { v4 as uuidv4 } from 'uuid';
 
 export async function GET(req: Request) {
   try {
@@ -53,10 +54,11 @@ export async function GET(req: Request) {
       const job = jobRate.job;
       const jobShifts = shifts.filter((shift) => shift.job === job);
 
-      const user_id = jobRate.user_id; // Directly using user_id from job_rates
+      const user_id = jobRate.user_id; 
 
       return {
-        user_id, 
+        id: uuidv4(), 
+        user_id,
         job,
         daily: getSums(jobShifts, 'daily'),
         weekly: getSums(jobShifts, 'weekly'),
@@ -70,11 +72,12 @@ export async function GET(req: Request) {
     }));
 
     jobRates.forEach((jobRate) => {
-      const user_id = jobRate.user_id; // Directly using user_id from job_rates
-      const userShifts = shifts.filter((shift) => shift.user_id === user_id); 
-    
+      const user_id = jobRate.user_id; 
+      const userShifts = shifts.filter((shift) => shift.user_id === user_id);
+
       const allJobStats: JobStatistics = {
-        user_id, 
+        id: uuidv4(), 
+        user_id,
         job: 'all',
         daily: getSums(userShifts, 'daily'),
         weekly: getSums(userShifts, 'weekly'),
@@ -86,8 +89,8 @@ export async function GET(req: Request) {
         },
       };
 
-      stats.push(allJobStats);  
-    });    
+      stats.push(allJobStats);
+    });
 
     const { error: statsError } = await supabase.from('job_statistics').upsert(stats);
     if (statsError) {
