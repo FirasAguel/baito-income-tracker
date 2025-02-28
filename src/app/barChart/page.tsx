@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Navbar from '@/components/Navbar';
 import { Bar } from 'react-chartjs-2';
 import { JobStatistics } from '../../types';
 import {
@@ -25,6 +26,7 @@ ChartJS.register(
 );
 
 const IncomeSummaryPage: React.FC = () => {
+  const [menuOpen, setMenuOpen] = useState(false);
   const [data, setData] = useState<JobStatistics[]>([]);
   const [selectedJob, setSelectedJob] = useState<string>('all');
   const [selectedYear, setSelectedYear] = useState<string>('all');
@@ -95,7 +97,7 @@ const IncomeSummaryPage: React.FC = () => {
       },
     ],
   };
-  // 縦軸に「(円)」を表示するオプション
+
   const chartOptions = {
     responsive: true,
     scales: {
@@ -113,11 +115,14 @@ const IncomeSummaryPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 px-5 py-10">
-      <div className="mx-auto max-w-3xl rounded-lg bg-white p-8 shadow-lg">
+    <div className="flex min-h-screen flex-col bg-white text-gray-900">
+      <Navbar onMenuToggle={setMenuOpen} />
+      <main
+        className={`container mx-auto py-10 transition-all ${menuOpen ? 'mt-88' : 'mt-12'} px-4`}
+      >
         <h1 className="mb-6 text-center text-3xl font-semibold">給料履歴</h1>
         <Link href="/">
-          <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">
+          <button className="mb-4 rounded bg-teal-500 px-4 py-2 text-white">
             戻る
           </button>
         </Link>
@@ -128,8 +133,8 @@ const IncomeSummaryPage: React.FC = () => {
             onClick={() => setSelectedYear('all')}
             className={`rounded-md px-4 py-2 transition ${
               selectedYear === 'all'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
+                ? 'bg-teal-600 text-white'
+                : 'bg-teal-300 text-teal-700 hover:bg-teal-400'
             }`}
           >
             すべての年
@@ -140,8 +145,8 @@ const IncomeSummaryPage: React.FC = () => {
               onClick={() => setSelectedYear(year)}
               className={`rounded-md px-4 py-2 transition ${
                 selectedYear === year
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-teal-300 text-teal-700 hover:bg-teal-400'
               }`}
             >
               {year}
@@ -155,8 +160,8 @@ const IncomeSummaryPage: React.FC = () => {
             onClick={() => setSelectedJob('all')}
             className={`rounded-md px-4 py-2 transition ${
               selectedJob === 'all'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
+                ? 'bg-teal-600 text-white'
+                : 'bg-teal-300 text-teal-700 hover:bg-teal-400'
             }`}
           >
             すべて
@@ -167,8 +172,8 @@ const IncomeSummaryPage: React.FC = () => {
               onClick={() => setSelectedJob(item.job)}
               className={`rounded-md px-4 py-2 transition ${
                 selectedJob === item.job
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-teal-300 text-teal-700 hover:bg-teal-400'
               }`}
             >
               {item.job}
@@ -180,7 +185,7 @@ const IncomeSummaryPage: React.FC = () => {
         <div className="mb-6">
           <Bar data={chartData} options={chartOptions} />
         </div>
-      </div>
+      </main>
     </div>
   );
 };
