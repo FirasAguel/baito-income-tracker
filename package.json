@@ -13,12 +13,14 @@
     "@supabase/supabase-js": "^2.48.1",
     "chart.js": "^4.4.8",
     "date-fns": "^4.1.0",
+    "dragAndDrop": "link:react-big-calendar/lib/addons/dragAndDrop",
     "next": "15.1.7",
     "react": "^19.0.0",
     "react-big-calendar": "^1.18.0",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.0.0",
-    "recharts": "^2.15.1"
+    "recharts": "^2.15.1",
+    "sass": "^1.85.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.0",
