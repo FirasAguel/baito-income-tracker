@@ -57,7 +57,8 @@ const PieChartPage: React.FC = () => {
 
         const { data: jobStatsData, error: jobStatsError } = await supabase
           .from('job_statistics')
-          .select('*');
+          .select('*')
+          .eq('user_id', user.id);
         if (jobStatsError) {
           console.error('从 Supabase 获取工作统计数据出错:', jobStatsError);
         }
