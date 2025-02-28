@@ -330,12 +330,12 @@ export default function ShiftCalendar() {
         <h1 className="mb-4 text-2xl font-bold">シフト一覧</h1>
         <div className="mb-4 flex flex-wrap gap-2">
           <Link href="/">
-            <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">
+            <button className="mb-4 rounded bg-teal-500 px-4 py-2 text-white">
               戻る
             </button>
           </Link>
           <Link href="/logout">
-            <button className="rounded bg-gray-500 px-4 py-2 text-white">
+            <button className="rounded bg-teal-500 px-4 py-2 text-white">
               logout
             </button>
           </Link>
@@ -384,7 +384,7 @@ export default function ShiftCalendar() {
           />
           <button
             onClick={addShift}
-            className="w-20 max-w-xs rounded bg-blue-500 px-4 py-2 text-white"
+            className="w-20 max-w-xs rounded bg-teal-500 px-4 py-2 text-white"
           >
             追加
           </button>
@@ -420,7 +420,7 @@ export default function ShiftCalendar() {
                 <td className="px-4 py-2 text-center">
                   <button
                     onClick={() => deleteShift(shift.id)}
-                    className="rounded bg-red-500 px-3 py-1 text-white"
+                    className="rounded bg-red-400 px-3 py-1 text-white"
                   >
                     削除
                   </button>

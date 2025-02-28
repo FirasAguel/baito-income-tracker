@@ -77,7 +77,7 @@ export default function ResetPasswordPage() {
           />
         </div>
         <button
-          className="rounded bg-blue-500 px-4 py-2 text-white"
+          className="rounded bg-teal-500 px-4 py-2 text-white"
           type="submit"
         >
           パスワードを更新

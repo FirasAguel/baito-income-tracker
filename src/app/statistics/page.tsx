@@ -149,7 +149,7 @@ export default function IncomeStatistics() {
     <div className="container mx-auto py-10">
       <h1 className="mb-4 text-2xl font-bold">収入履歴</h1>
       <Link href="/">
-        <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">
+        <button className="mb-4 rounded bg-teal-500 px-4 py-2 text-white">
           戻る
         </button>
       </Link>
