@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
       // メール送信完了
       setIsSubmitted(true);
     } catch (err) {
-      setError('エラーが発生しました');
+      setError('エラーが発生しました: ' + err);
     }
   };
 
@@ -53,7 +53,7 @@ export default function ForgotPasswordPage() {
           入力されたメールアドレスに再発行用のリンクを送信しました。
         </p>
         <button
-          className="rounded bg-blue-500 px-4 py-2 text-white"
+          className="rounded bg-teal-500 px-4 py-2 text-white"
           onClick={() => router.push('/login')}
         >
           ログインへ戻る
@@ -80,7 +80,7 @@ export default function ForgotPasswordPage() {
           />
         </div>
         <button
-          className="rounded bg-blue-500 px-4 py-2 text-white"
+          className="rounded bg-teal-500 px-4 py-2 text-white"
           type="submit"
         >
           リセットメールを送信

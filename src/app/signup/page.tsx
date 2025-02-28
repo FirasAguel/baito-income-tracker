@@ -75,7 +75,7 @@ export default function SignUpPage() {
 
         <button
           type="submit"
-          className="w-full rounded bg-blue-500 px-4 py-2 text-white"
+          className="w-full rounded bg-teal-500 px-4 py-2 text-white"
           disabled={loading}
         >
           {loading ? '登録中...' : 'サインアップ'}
@@ -84,7 +84,7 @@ export default function SignUpPage() {
 
       <div className="mt-4 text-center">
         既にアカウントをお持ちですか？{' '}
-        <Link href="/login" className="text-blue-600 hover:underline">
+        <Link href="/login" className="text-teal-600 hover:underline">
           ログイン
         </Link>
       </div>

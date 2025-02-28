@@ -28,7 +28,7 @@ export default function ResetPasswordPage() {
 
     try {
       // supabase.auth.updateUser() を呼ぶと、現在の一時セッションでパスワードを更新できる
-      const { data, error } = await supabase.auth.updateUser({
+      const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });
       if (error) {
@@ -42,7 +42,7 @@ export default function ResetPasswordPage() {
       setTimeout(() => {
         router.push('/login');
       }, 2000);
-    } catch (err: any) {
+    } catch (err) {
       setError('サーバーエラーが発生しました。');
       console.error('Update password error:', err);
     }
@@ -77,7 +77,7 @@ export default function ResetPasswordPage() {
           />
         </div>
         <button
-          className="rounded bg-blue-500 px-4 py-2 text-white"
+          className="rounded bg-teal-500 px-4 py-2 text-white"
           type="submit"
         >
           パスワードを更新

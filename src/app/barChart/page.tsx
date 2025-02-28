@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Navbar from '@/components/Navbar';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -36,9 +37,11 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const IncomeSummaryPage: React.FC = () => {
+  const [menuOpen, setMenuOpen] = useState(false);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [selectedJob, setSelectedJob] = useState<string>('すべて');
   const [selectedYear, setSelectedYear] = useState<string>('all');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -65,7 +68,7 @@ const IncomeSummaryPage: React.FC = () => {
     fetchData();
   }, []);
 
-  // Compute available years from the shifts data
+  // Compute available years from shifts data
   const years = Array.from(
     new Set(
       shifts.map((shift) => new Date(shift.endDate).getFullYear().toString())
@@ -73,7 +76,7 @@ const IncomeSummaryPage: React.FC = () => {
   );
 
   // Build a set of months (formatted as "YYYY-MM") for shifts that match the selected year (or all years if 'all')
-  let monthsSet = new Set<string>();
+  const monthsSet = new Set<string>();
   shifts.forEach((shift) => {
     const date = new Date(shift.endDate);
     const monthStr = `${date.getFullYear()}-${(date.getMonth() + 1)
@@ -137,14 +140,20 @@ const IncomeSummaryPage: React.FC = () => {
 
   // Compute unique jobs from shifts and prepend "すべて" for all workplaces combined
   const uniqueJobs = Array.from(new Set(shifts.map((shift) => shift.job)));
-  const jobOptions = ['すべて', ...uniqueJobs];
+  const jobOptions = [
+    'すべて',
+    ...uniqueJobs.filter((job) => job !== 'すべて'),
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-100 px-5 py-10">
-      <div className="mx-auto max-w-3xl rounded-lg bg-white p-8 shadow-lg">
+    <div className="flex min-h-screen flex-col bg-white text-gray-900">
+      <Navbar onMenuToggle={setMenuOpen} />
+      <main
+        className={`container mx-auto py-10 transition-all ${menuOpen ? 'mt-88' : 'mt-12'} px-4`}
+      >
         <h1 className="mb-6 text-center text-3xl font-semibold">給料履歴</h1>
-        <Link href="/shift">
-          <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">
+        <Link href="/home">
+          <button className="mb-4 rounded bg-teal-500 px-4 py-2 text-white">
             戻る
           </button>
         </Link>
@@ -155,27 +164,25 @@ const IncomeSummaryPage: React.FC = () => {
             onClick={() => setSelectedYear('all')}
             className={`rounded-md px-4 py-2 transition ${
               selectedYear === 'all'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
+                ? 'bg-teal-600 text-white'
+                : 'bg-teal-300 text-teal-700 hover:bg-teal-400'
             }`}
           >
             すべての年
           </button>
-          {years
-            .sort((a, b) => parseInt(a) - parseInt(b))
-            .map((year) => (
-              <button
-                key={year}
-                onClick={() => setSelectedYear(year)}
-                className={`rounded-md px-4 py-2 transition ${
-                  selectedYear === year
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
-                }`}
-              >
-                {year}
-              </button>
-            ))}
+          {years.map((year) => (
+            <button
+              key={year}
+              onClick={() => setSelectedYear(year)}
+              className={`rounded-md px-4 py-2 transition ${
+                selectedYear === year
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-teal-300 text-teal-700 hover:bg-teal-400'
+              }`}
+            >
+              {year}
+            </button>
+          ))}
         </div>
 
         {/* 仕事選択ボタン */}
@@ -186,8 +193,8 @@ const IncomeSummaryPage: React.FC = () => {
               onClick={() => setSelectedJob(job)}
               className={`rounded-md px-4 py-2 transition ${
                 selectedJob === job
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-teal-300 text-teal-700 hover:bg-teal-400'
               }`}
             >
               {job}
@@ -199,7 +206,7 @@ const IncomeSummaryPage: React.FC = () => {
         <div className="mb-6">
           <Bar data={chartData} options={chartOptions} />
         </div>
-      </div>
+      </main>
     </div>
   );
 };

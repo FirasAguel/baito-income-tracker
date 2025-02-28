@@ -3,7 +3,7 @@ import supabase from '@/lib/supabase';
 import { Shift, JobStatistics } from '../../../types';
 import { v4 as uuidv4 } from 'uuid';
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const { data: shifts, error: shiftsError } = await supabase
       .from('shifts')
@@ -15,9 +15,6 @@ export async function GET(req: Request) {
     if (shiftsError || jobRatesError) {
       throw new Error(shiftsError?.message || jobRatesError?.message);
     }
-
-    const url = new URL(req.url);
-    const selectedJob = url.searchParams.get('job') || 'all';
 
     const getSums = (
       shiftsData: Shift[],
@@ -56,11 +53,6 @@ export async function GET(req: Request) {
       return { income: incomeSums, hours: hoursSums };
     };
 
-    const filteredShifts =
-      selectedJob === 'all'
-        ? shifts
-        : shifts.filter((shift) => shift.job === selectedJob);
-
     const stats: JobStatistics[] = await Promise.all(
       jobRates.map(async (jobRate) => {
         const job = jobRate.job;
@@ -91,6 +83,7 @@ export async function GET(req: Request) {
       const userShifts = shifts.filter((shift) => shift.user_id === user_id);
 
       const allJobStats: JobStatistics = {
+        // @ts-expect-error: Adding 'id' property which is not defined in 'JobStatistics'
         id: uuidv4(),
         user_id,
         job: 'all',

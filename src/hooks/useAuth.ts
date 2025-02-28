@@ -8,7 +8,7 @@ export function useAuth() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
+      const { data } = await supabase.auth.getUser();
       if (data?.user) {
         setUser(data.user); // ✅ 现在不会报错了
       }

@@ -32,7 +32,7 @@ export default function LoginPage() {
     }
 
     // 用户登录成功后，检查 profiles 表中是否存在此用户的记录
-    const { data: profile, error: profileError } = await supabase
+    const { error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('user_id', data.user.id)
@@ -53,8 +53,8 @@ export default function LoginPage() {
       }
     }
 
-    // 登录成功后跳转到 shift 页面
-    router.push('/shift');
+    // 登录成功后跳转到 home 页面
+    router.push('/home');
   };
 
   return (
@@ -89,11 +89,11 @@ export default function LoginPage() {
         <div className="flex items-center justify-between text-sm">
           <Link
             href="/forgotpassword"
-            className="text-blue-600 hover:underline"
+            className="text-teal-600 hover:underline"
           >
             パスワードをお忘れの方
           </Link>
-          <Link href="/signup" className="text-blue-600 hover:underline">
+          <Link href="/signup" className="text-teal-600 hover:underline">
             アカウントを作成
           </Link>
         </div>
@@ -101,7 +101,7 @@ export default function LoginPage() {
         {/* 登录按钮 */}
         <button
           type="submit"
-          className="w-full rounded bg-blue-500 px-4 py-2 text-white"
+          className="w-full rounded bg-teal-500 px-4 py-2 text-white"
           disabled={loading}
         >
           {loading ? 'ログイン中...' : 'ログイン'}
