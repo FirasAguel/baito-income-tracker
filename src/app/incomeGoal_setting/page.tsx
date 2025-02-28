@@ -47,16 +47,21 @@ export default function IncomeGoalSetting() {
           .select('*')
           .eq('user_id', userId)
           .eq('year', incomeGoalData.year)
-          .single();
+          .maybeSingle(); // Use maybeSingle() to handle no result scenario
         if (error) {
-          console.error('Error fetching income goal:', error);
-        }
-        if (data) {
-          // Convert stored income (assumed to be stored as number of yen)
-          // to "万円" (divide by 10000)
+          console.error('Error fetching income goal:', error.message);
+        } else if (data) {
+          // Convert stored income (assumed to be in yen) to "万円" (divide by 10,000)
           setIncomeGoalData({
             year: data.year,
             incomeGoal: data.income_goal / 10000,
+          });
+        } else {
+          // Handle case where no data is returned
+          console.log('No income goal set for this year.');
+          setIncomeGoalData({
+            year: incomeGoalData.year,
+            incomeGoal: 0, // or any default value
           });
         }
       }
