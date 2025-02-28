@@ -127,7 +127,7 @@ const PieChartPage: React.FC = () => {
   return (
     <div className="flex flex-col items-center justify-center p-4">
       <h1 className="text-3xl font-semibold text-center mb-6">給料見込</h1>
-      <Link href="/">
+      <Link href="/shift">
         <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">
           戻る
         </button>

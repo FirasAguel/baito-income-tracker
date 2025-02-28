@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import supabase from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 
 interface Shift {
   id: number;
@@ -20,6 +21,7 @@ interface Shift {
   rate: number;
   nightRate: number;
   income: number;
+  user_id: string | null;
 }
 
 export default function ShiftCalendar() {
@@ -34,12 +36,14 @@ export default function ShiftCalendar() {
   const [jobStatistics, setJobStatistics] = useState<JobStatistics | null>(null); // only needs job:"all"
   const [userId, setUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchUserData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
+        console.log("当前用户 ID:", user.id); // 确保获取到用户 ID
         const { data: jobRatesData } = await supabase
           .from('job_rates')
           .select('*')
@@ -53,15 +57,18 @@ export default function ShiftCalendar() {
               rate: jobRatesData[0].rate,
               nightRate: jobRatesData[0].nightRate,
             }))
-            const { data: shiftsData } = await supabase.from('shifts').select('*');
+            const { data: shiftsData } = await supabase.from('shifts').select('*').eq('user_id', user.id);
             if (shiftsData) setShifts(shiftsData);
-
+    
             const { data: jobStatsData } = await supabase.from('job_statistics').select('*').eq('job', 'all').single();
             if (jobStatsData) setJobStatistics(jobStatsData);
-          }}}else{
-            console.error("ユーザーが認証されていません");
           }
-        };
+        }
+      } else {
+        console.error("ユーザーが認証されていません");
+      }
+    };
+      
     fetchUserData();
   }, []);
 
@@ -170,55 +177,73 @@ export default function ShiftCalendar() {
 
     const rate = selectedJob.rate;
     const nightRate = selectedJob.nightRate;
+    const { data: shifts} = await supabase.from('shifts').select('id').order('id', { ascending: false }).limit(1);
     let shift: Shift | null = null;
+    const nextId = shifts && shifts.length > 0 ? shifts[0].id + 1 : 1;
+
+    const formatToJST = (date: string) => {
+      const dt = new Date(date);
+      return dt.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }).replace(',', '');
+    };
   
     if (newShift.startTime && newShift.endTime) {
       // ケース1：出勤時間と退社時間が入力されている場合、勤務時間を計算する
       const hours = calculateWorkHours(newShift.startTime, newShift.endTime);
+      const endTime_f = formatToJST(new Date(newShift.endTime).toISOString());
+      const startTime_f = formatToJST(new Date(newShift.startTime).toISOString());
       const income = calculateIncome(newShift.startTime, newShift.endTime, rate, nightRate);
+      console.log(startTime_f, endTime_f);
       shift = {
-        id: Date.now(),
+        id: nextId,
         startDate: newShift.startTime.split('T')[0],
         endDate: newShift.endTime.split('T')[0],
         job: newShift.job,
         hours,
-        startTime: newShift.startTime,
-        endTime: newShift.endTime,
+        startTime: startTime_f,
+        endTime: endTime_f,
         rate: rate,
         nightRate: nightRate,
         income: income,
+        user_id: userId,
       };
     } else if (newShift.startTime && newShift.hours) {
       // ケース2：出勤時間と勤務時間が入力されている場合、退社時間を計算する
+      
       const endTime = calculateEndTime(newShift.startTime, newShift.hours);
+      const endTime_f = formatToJST(new Date(endTime.replace('/', '-').replace('/', '-').replace(' ', 'T')).toISOString());
+      const startTime_f = formatToJST(new Date(newShift.startTime).toISOString());
       const income = calculateIncome(newShift.startTime, endTime, rate, nightRate);
       shift = {
-        id: Date.now(),
+        id: nextId,
         startDate: newShift.startTime.split('T')[0],
         endDate: endTime.split(' ')[0].replace(/\//g,"-"),
         job: newShift.job,
         hours: newShift.hours,
-        startTime: newShift.startTime,
-        endTime,
+        startTime:startTime_f,
+        endTime: endTime_f,
         rate: rate,
         nightRate: nightRate,
         income: income,
+        user_id: userId,
       };
     } else if (newShift.endTime && newShift.hours) {
       // ケース3：退社時間と勤務時間が入力されている場合、出勤時間を計算する
       const startTime = calculateStartTime(newShift.endTime, newShift.hours);
+      const startTime_f = formatToJST(new Date(startTime.replace('/', '-').replace('/', '-').replace(' ', 'T')).toISOString());
       const income = calculateIncome(startTime, newShift.endTime, rate, nightRate);
+      const endTime_f = formatToJST(new Date(newShift.endTime).toISOString());
       shift = {
-        id: Date.now(),
+        id: nextId,
         startDate: startTime.split(' ')[0].replace(/\//g,"-"),
         endDate: newShift.endTime.split('T')[0],
         job: newShift.job,
         hours: newShift.hours,
-        startTime,
-        endTime: newShift.endTime,
+        startTime: startTime_f,
+        endTime: endTime_f,
         rate: rate,
         nightRate: nightRate,
         income: income,
+        user_id: userId,
       };
     } else {
       // 必要な2つの項目が入力されていない場合、エラーを表示する
@@ -226,8 +251,10 @@ export default function ShiftCalendar() {
       return;
     }
     const { data, error } = await supabase.from('shifts').insert([shift]);
-
+    
     if (error) {
+      console.error(error);
+      console.log('Shifts data:', data);
       setError('シフトの追加に失敗しました。');
       return;
     }
@@ -236,6 +263,10 @@ export default function ShiftCalendar() {
     } else {
       setError('シフトのデータが正しく返されませんでした。');
     }
+    const { data: shiftsData } = await supabase.from('shifts').select('*').eq('user_id', userId);
+  if (shiftsData) {
+    setShifts(shiftsData);
+  }
     setNewShift({ startTime: '', endTime: '', hours: 0, job: jobRates[0]?.job || '' });
     setError(null);
   };
@@ -269,9 +300,13 @@ export default function ShiftCalendar() {
   return (
     <div className="container mx-auto py-10">
       <h1 className="mb-4 text-2xl font-bold">シフト管理カレンダー</h1>
-      <Link href="/">
-        <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">戻る</button>
+      <Link href="/logout">
+        <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">logout</button>
       </Link>
+      <button className="mb-4 rounded bg-blue-500 px-4 py-2 text-white" onClick={() => router.push("/shift_settings")}>勤務先設定</button>
+      <button className="mb-4 rounded bg-green-500 px-4 py-2 text-white" onClick={() => router.push("/incomeGoal_setting")}>年収目標設定</button>
+      <button className="mb-4 rounded bg-orange-500 px-4 py-2 text-white" onClick={() => router.push("/barChart")}>給料履歴</button>
+      <button className="mb-4 rounded bg-purple-500 px-4 py-2 text-white" onClick={() => router.push("/pieChart")}>給料見込</button>
       <ToastContainer position="top-right" autoClose={5000} />
       {error && <div className="mb-4 text-red-500">{error}</div>}
 

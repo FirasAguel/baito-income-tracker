@@ -25,20 +25,31 @@ export default function JobSettings() {
 
   useEffect(() => {
     const fetchUserData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-        const { data, error } = await supabase
+      const { data, error } = await supabase.auth.getUser();
+
+      if (error) {
+        console.error('Error getting user:', error.message);
+        setError('ユーザー情報を取得できませんでした。');
+        return;
+      }
+
+      setUserId(data?.user.id || null);
+
+      if (data?.user.id) {
+        const { data: jobRatesData, error: jobRatesError } = await supabase
           .from('job_rates')
           .select('*')
-          .eq('user_id', user.id); 
-        if (error) {
-          console.error('Error fetching job rates:', error);
+          .eq('user_id', data.user.id);
+
+        if (jobRatesError) {
+          setError('勤務先情報を取得できませんでした。');
+          console.error(jobRatesError);
         } else {
-          setJobRates(data || []);
+          setJobRates(jobRatesData || []);
         }
       }
     };
+
     fetchUserData();
   }, []);
 
@@ -48,7 +59,7 @@ export default function JobSettings() {
       const nightRate = Math.round(rate * 1.25);
       const { data, error } = await supabase
         .from('job_rates')
-        .insert([{ job: newJob, rate, nightRate }])
+        .insert([{ job: newJob, rate, nightRate, user_id: userId }]) 
         .select();
       if (error) {
         console.error('Error adding job rate:', error);
@@ -84,7 +95,7 @@ export default function JobSettings() {
   return (
     <div className="container mx-auto py-10">
       <h1 className="mb-4 text-2xl font-bold">勤務先と時給設定</h1>
-      <Link href="/">
+      <Link href="/shift">
         <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">戻る</button>
       </Link>
       {error && <div className="mb-4 text-red-500">{error}</div>}

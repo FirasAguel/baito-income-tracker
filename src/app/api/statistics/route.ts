@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import supabase from '@/lib/supabase';
-import {Shift, JobStatistics} from "../../../types"
+import { Shift, JobStatistics } from "../../../types";
 
 export async function GET(req: Request) {
   try {
@@ -10,6 +10,7 @@ export async function GET(req: Request) {
     if (shiftsError || jobRatesError) {
       throw new Error(shiftsError?.message || jobRatesError?.message);
     }
+
     const url = new URL(req.url);
     const selectedJob = url.searchParams.get('job') || 'all';
 
@@ -48,12 +49,24 @@ export async function GET(req: Request) {
 
     const filteredShifts = selectedJob === 'all' ? shifts : shifts.filter(shift => shift.job === selectedJob);
 
-    const stats: JobStatistics[] = jobRates.map((jobRate) => {
+    const stats: JobStatistics[] = await Promise.all(jobRates.map(async (jobRate) => {
       const job = jobRate.job;
       const jobShifts = shifts.filter((shift) => shift.job === job);
-      const userId = jobRate.userId; 
+
+      const { data: userProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_id') 
+        .eq('job', jobRate.job)  
+        .single();  
+
+      if (profileError) {
+        throw new Error(profileError.message);
+      }
+
+      const user_id = userProfile?.user_id || jobRate.user_id; 
+
       return {
-        userId, 
+        user_id, 
         job,
         daily: getSums(jobShifts, 'daily'),
         weekly: getSums(jobShifts, 'weekly'),
@@ -64,14 +77,14 @@ export async function GET(req: Request) {
           ),
         },
       };
-    });
+    }));
 
     jobRates.forEach((jobRate) => {
-      const userId = jobRate.userId;
-      const userShifts = shifts.filter((shift) => shift.userId === userId); 
+      const user_id = jobRate.user_id;
+      const userShifts = shifts.filter((shift) => shift.user_id === user_id); 
     
       const allJobStats: JobStatistics = {
-        userId, 
+        user_id, 
         job: 'all',
         daily: getSums(userShifts, 'daily'),
         weekly: getSums(userShifts, 'weekly'),
@@ -97,3 +110,4 @@ export async function GET(req: Request) {
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
+
