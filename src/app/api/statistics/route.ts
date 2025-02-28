@@ -1,101 +1,99 @@
-// src/app/api/statistics/route.tsx
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { Shift, JobRate } from "@../../../src/types";
+import { NextResponse } from 'next/server';
+import supabase from '@/lib/supabase';
+import {Shift, JobStatistics} from "../../../types"
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! 
-);
-
-const getShifts = async (): Promise<Shift[]> => {
-  const { data, error } = await supabase.from("shifts").select("*");
-  if (error) {
-    console.error("Error fetching shifts:", error);
-    return [];
-  }
-  return data as Shift[];
-};
-
-const getJobRates = async (): Promise<JobRate[]> => {
-  const { data, error } = await supabase.from("jobRates").select("*");
-  if (error) {
-    console.error("Error fetching job rates:", error);
-    return [];
-  }
-  return data as JobRate[];
-};
-
-const getSums = (
-  shifts: Shift[],
-  type: "daily" | "monthly" | "yearly"
-): Record<string, { income: number; hours: number }> => {
-  const incomeSums: Record<string, { income: number; hours: number }> = {};
-
-  shifts.forEach((shift) => {
-    if (!shift.endDate) return;
-    const date = new Date(shift.endDate);
-    let key = "";
-
-    if (type === "daily") {
-      key = shift.endDate;
-    } else if (type === "monthly") {
-      key = `${date.getFullYear()}-${(date.getMonth() + 1)
-        .toString()
-        .padStart(2, "0")}`;
-    } else {
-      key = date.getFullYear().toString();
-    }
-
-    if (!incomeSums[key]) {
-      incomeSums[key] = { income: 0, hours: 0 };
-    }
-    incomeSums[key].income += shift.income || 0;
-    incomeSums[key].hours += shift.hours || 0;
-  });
-
-  return incomeSums;
-};
-
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const shifts = await getShifts();
-    const jobRates = await getJobRates();
+    const { data: shifts, error: shiftsError } = await supabase.from('shifts').select('*');
+    const { data: jobRates, error: jobRatesError } = await supabase.from('job_rates').select('*');
 
-    if (!shifts.length || !jobRates.length) {
-      return NextResponse.json(
-        { message: "No shifts or job rates available." },
-        { status: 404 }
-      );
+    if (shiftsError || jobRatesError) {
+      throw new Error(shiftsError?.message || jobRatesError?.message);
     }
+    const url = new URL(req.url);
+    const selectedJob = url.searchParams.get('job') || 'all';
 
-    const statistics = jobRates.map((jobRate) => {
-      const jobShifts = shifts.filter((shift) => shift.job === jobRate.job);
+    const getSums = (shiftsData: Shift[], type: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
+      const incomeSums: Record<string, number> = {};
+      const hoursSums: Record<string, number> = {};
+
+      shiftsData.forEach((shift) => {
+        if (!shift.endDate) return;
+        const date = new Date(shift.endDate);
+        let key = '';
+
+        if (type === 'daily') {
+          key = shift.endDate;
+        } else if (type === 'weekly') {
+          const startOfWeek = new Date(date);
+          startOfWeek.setDate(date.getDate() - date.getDay() + 1); // Set to Monday
+          key = `${startOfWeek.getFullYear()}-${(startOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${startOfWeek.getDate().toString().padStart(2, '0')}`;
+        } else if (type === 'monthly') {
+          key = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+        } else { // yearly
+          key = date.getFullYear().toString();
+        }
+
+        if (!incomeSums[key]) {
+          incomeSums[key] = 0;
+          hoursSums[key] = 0;
+        }
+
+        incomeSums[key] += shift.income || 0;
+        hoursSums[key] += shift.hours || 0;
+      });
+
+      return { income: incomeSums, hours: hoursSums };
+    };
+
+    const filteredShifts = selectedJob === 'all' ? shifts : shifts.filter(shift => shift.job === selectedJob);
+
+    const stats: JobStatistics[] = jobRates.map((jobRate) => {
+      const job = jobRate.job;
+      const jobShifts = shifts.filter((shift) => shift.job === job);
+      const userId = jobRate.userId; 
       return {
-        job: jobRate.job,
-        daily: getSums(jobShifts, "daily"),
-        monthly: getSums(jobShifts, "monthly"),
-        yearly: getSums(jobShifts, "yearly"),
+        userId, 
+        job,
+        daily: getSums(jobShifts, 'daily'),
+        weekly: getSums(jobShifts, 'weekly'),
+        monthly: getSums(jobShifts, 'monthly'),
+        yearly: {
+          income: Object.fromEntries(
+            Object.entries(getSums(jobShifts, 'yearly').income).map(([year, income]) => [year, income])
+          ),
+        },
       };
     });
 
-    const allDaily = getSums(shifts, "daily");
-    const allMonthly = getSums(shifts, "monthly");
-    const allYearly = getSums(shifts, "yearly");
+    jobRates.forEach((jobRate) => {
+      const userId = jobRate.userId;
+      const userShifts = shifts.filter((shift) => shift.userId === userId); 
+    
+      const allJobStats: JobStatistics = {
+        userId, 
+        job: 'all',
+        daily: getSums(userShifts, 'daily'),
+        weekly: getSums(userShifts, 'weekly'),
+        monthly: getSums(userShifts, 'monthly'),
+        yearly: {
+          income: Object.fromEntries(
+            Object.entries(getSums(userShifts, 'yearly').income).map(([year, income]) => [year, income])
+          ),
+        },
+      };
 
-    statistics.push({
-      job: "all",
-      daily: allDaily,
-      monthly: allMonthly,
-      yearly: allYearly,
-    });
+      stats.push(allJobStats);  
+    });    
 
-    return NextResponse.json(statistics);
+    const { error: statsError } = await supabase.from('job_statistics').upsert(stats);
+    if (statsError) {
+      throw new Error(statsError.message);
+    }
+
+    return NextResponse.json({ stats }, { status: 200 });
   } catch (error) {
-    console.error("Error fetching statistics:", error);
-    return NextResponse.json(
-      { message: "Internal Server Error" },
-      { status: 500 }
-    );
+    console.error('Error fetching statistics:', error);
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }

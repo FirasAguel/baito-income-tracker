@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import supabase from '@/lib/supabase';
 
 interface IncomeGoal {
   year: string;
@@ -13,25 +14,61 @@ export default function IncomeGoalSetting() {
   const currentYear = new Date().getFullYear();
   const [incomeGoalData, setIncomeGoalData] = useState<IncomeGoal>({ year: currentYear.toString(), incomeGoal: 0 });
   const [message, setMessage] = useState<string>('');
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const storedData = localStorage.getItem('incomeGoals');
-    if (storedData) {
-      const incomeGoals: { [key: string]: number } = JSON.parse(storedData);
-      setIncomeGoalData((prev) => ({ ...prev, incomeGoal: incomeGoals[prev.year]/10000 || 0 }));
-    }
-  }, [incomeGoalData.year]);
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+      }
+    };
 
-  const handleSave = () => {
-    const storedData = localStorage.getItem('incomeGoals');
-    let incomeGoals: { [key: string]: number } = storedData ? JSON.parse(storedData) : {};
-    if (incomeGoalData.incomeGoal === 0) {
-      delete incomeGoals[incomeGoalData.year];
-    } else {
-      incomeGoals[incomeGoalData.year] = incomeGoalData.incomeGoal * 10000;
+    fetchUser();
+  }, []);
+
+  useEffect(() => {
+    const fetchIncomeGoal = async () => {
+      if (!userId) return;
+
+      const { data, error } = await supabase
+        .from('income_goals')
+        .select('income_goal')
+        .eq('year', incomeGoalData.year)
+        .eq('user_id', userId)
+        .single();
+
+      if (!error && data) {
+        setIncomeGoalData((prev) => ({ ...prev, incomeGoal: data.income_goal / 10000 }));
+      } else {
+        setIncomeGoalData((prev) => ({ ...prev, incomeGoal: 0 }));
+      }
+    };
+
+    fetchIncomeGoal();
+  }, [incomeGoalData.year, userId]);
+
+  const handleSave = async () => {
+    if (!userId) {
+      setMessage('ユーザーがログインしていません');
+      return;
     }
-    localStorage.setItem('incomeGoals', JSON.stringify(incomeGoals));
-    setMessage('保存しました');
+
+    const { error } = await supabase
+      .from('income_goals')
+      .upsert([
+        {
+          year: incomeGoalData.year,
+          income_goal: incomeGoalData.incomeGoal * 10000,
+          user_id: userId,
+        },
+      ]);
+
+    if (error) {
+      setMessage('保存に失敗しました');
+    } else {
+      setMessage('保存しました');
+    }
   };
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

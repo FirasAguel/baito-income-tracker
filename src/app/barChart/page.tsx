@@ -6,24 +6,39 @@ import Link from 'next/link';
 import { Bar } from "react-chartjs-2";
 import { JobStatistics } from '../../types';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js";
+import { createClient } from "@supabase/supabase-js";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const IncomeSummaryPage: React.FC = () => {
   const [data, setData] = useState<JobStatistics[]>([]);
   const [selectedJob, setSelectedJob] = useState<string>("all");
   const [selectedYear, setSelectedYear] = useState<string>("all");
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      const storedData = localStorage.getItem("jobStatistics");
-      if (storedData) {
-        const parsedData: JobStatistics[] = JSON.parse(storedData);
-        setData(parsedData);
+    const fetchData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        const { data: jobData, error } = await supabase
+          .from("job_statistics")
+          .select("*")
+          .eq("userId", user.id); 
+        if (error) {
+          console.error("データを読み込めませんでした:", error);
+        } else if (jobData) {
+          setData(jobData as JobStatistics[]);
+        }
+      } else {
+        console.error("ユーザーが認証されていません");
       }
-    } catch (error) {
-      console.error("ローカルストレージからデータを読み込めませんでした:", error);
-    }
+    };
+    fetchData();
   }, []);
 
   if (!data || data.length === 0) {

@@ -5,6 +5,13 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { JobStatistics, IncomeGoal } from '../../types';
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
+import { createClient } from "@supabase/supabase-js";
+
+type IncomeGoalMapping = { [year: string]: number };
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const COLORS = [
   '#0088FE',
@@ -18,36 +25,57 @@ const COLORS = [
 ];
 
 const PieChartPage: React.FC = () => {
-  const [incomeGoalData, setIncomeGoalData] = useState<IncomeGoal | null>(null);
+  const [incomeGoalData, setIncomeGoalData] = useState<IncomeGoalMapping | null>(null);
   const [jobStatistics, setJobStatistics] = useState<JobStatistics[]>([]);
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const incomeGoalStr = localStorage.getItem('incomeGoals');
-    const jobStatisticsStr = localStorage.getItem('jobStatistics');
-    
-    if (incomeGoalStr && jobStatisticsStr) {
-      try {
-        const parsedIncomeGoal = JSON.parse(incomeGoalStr) as IncomeGoal;
-        const parsedJobStatistics = JSON.parse(jobStatisticsStr) as JobStatistics[];
-        setIncomeGoalData(parsedIncomeGoal);
-        setJobStatistics(parsedJobStatistics);
+    const fetchUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        const { data: incomeGoalsData, error: incomeGoalsError } = await supabase
+          .from("income_goals")
+          .select("*")
+          .eq('user_id', user.id);
+        if (incomeGoalsError) {
+          console.error("从 Supabase 获取收入目标数据出错:", incomeGoalsError);
+        }
+      
+        const incomeGoals: IncomeGoalMapping = {};
+        if (incomeGoalsData) {
+          incomeGoalsData.forEach((record: any) => {
+            incomeGoals[record.year] = record.income_goal;
+          });
+        }
+        setIncomeGoalData(incomeGoals);
+
+        const { data: jobStatsData, error: jobStatsError } = await supabase
+          .from("job_statistics")
+          .select("*");
+        if (jobStatsError) {
+          console.error("从 Supabase 获取工作统计数据出错:", jobStatsError);
+        }
+        setJobStatistics(jobStatsData as JobStatistics[]);
 
         const allYears = [
           ...new Set([
-            ...Object.keys(parsedIncomeGoal),
-            ...parsedJobStatistics.flatMap(job => Object.keys(job.yearly.income))
+            ...Object.keys(incomeGoals),
+            ...((jobStatsData as JobStatistics[]) || []).flatMap(job =>
+              Object.keys(job.yearly.income)
+            )
           ])
         ].sort();
-        
-        const currentYear = new Date().getFullYear().toString();
-        if (allYears.includes(currentYear)) {
-          setSelectedYear(currentYear);
-        }
-      } catch (error) {
-        console.error("localStorage データの解析エラー:", error);
-      }
-    }
+          
+          const currentYear = new Date().getFullYear().toString();
+          if (allYears.includes(currentYear)) {
+            setSelectedYear(currentYear);
+          } else if (allYears.length > 0) {
+            setSelectedYear(allYears[0]);
+          }
+        }};
+    fetchUserData();
   }, []);
 
   if (!incomeGoalData || jobStatistics.length === 0 || !selectedYear) {

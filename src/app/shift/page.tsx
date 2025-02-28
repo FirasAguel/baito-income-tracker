@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { toast } from 'react-toastify';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import supabase from '@/lib/supabase';
 
 interface Shift {
   id: number;
@@ -31,50 +32,38 @@ export default function ShiftCalendar() {
     job: '',
   });
   const [jobStatistics, setJobStatistics] = useState<JobStatistics | null>(null); // only needs job:"all"
-
+  const [userId, setUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const savedJobRates = localStorage.getItem('jobRates');
-    if (savedJobRates) {
-      const parsedJobRates: JobRate[] = JSON.parse(savedJobRates);
-      setJobRates(parsedJobRates);
-      if (parsedJobRates.length > 0) {
-        setNewShift((prevState) => ({
-          ...prevState,
-          job: parsedJobRates[0].job,
-          rate: parsedJobRates[0].rate,
-          nightRate: parsedJobRates[0].nightRate,
-        }));
-      }
-    }
-    const savedShifts = localStorage.getItem('shifts');
-    if (savedShifts) {
-      const parsedShifts: Shift[] = JSON.parse(savedShifts);
-      setShifts(parsedShifts);
-    }
-    const savedJobStats = localStorage.getItem('jobStatistics');
-    if (savedJobStats) {
-      const parsedJobStats: JobStatistics[] = JSON.parse(savedJobStats);
-      const allStats = parsedJobStats.find((stat) => stat.job === 'all');
-      if (allStats) {
-        setJobStatistics(allStats);
-      }
-    }
-  }, []);
+    const fetchUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        const { data: jobRatesData } = await supabase
+          .from('job_rates')
+          .select('*')
+          .eq('user_id', user.id);
+        if (jobRatesData) {
+          setJobRates(jobRatesData);
+          if (jobRatesData.length > 0) {
+            setNewShift((prevState) => ({
+              ...prevState,
+              job: jobRatesData[0].job,
+              rate: jobRatesData[0].rate,
+              nightRate: jobRatesData[0].nightRate,
+            }))
+            const { data: shiftsData } = await supabase.from('shifts').select('*');
+            if (shiftsData) setShifts(shiftsData);
 
-  useEffect(() => {
-    if (newShift.job) {
-      const foundJob = jobRates.find((j) => j.job === newShift.job);
-      if (foundJob) {
-        setNewShift((prev) => ({
-          ...prev,
-          rate: foundJob.rate,
-          nightRate: foundJob.nightRate,
-        }));
-      }
-    }
-  }, [newShift.job, jobRates]);
+            const { data: jobStatsData } = await supabase.from('job_statistics').select('*').eq('job', 'all').single();
+            if (jobStatsData) setJobStatistics(jobStatsData);
+          }}}else{
+            console.error("ユーザーが認証されていません");
+          }
+        };
+    fetchUserData();
+  }, []);
 
   useEffect(() => {
     if (!jobStatistics) return;
@@ -166,7 +155,7 @@ export default function ShiftCalendar() {
   };
 
 
-  const addShift = () => {
+  const addShift = async () => {
     // 勤務先が入力されていない場合、エラーを表示して処理を中断
     if (!newShift.job) {
       setError('勤務先を選択してください');
@@ -236,17 +225,28 @@ export default function ShiftCalendar() {
       setError('勤務先とともに、出勤時間、退社時間、または勤務時間のうち2つを入力してください。');
       return;
     }
-    const updatedShifts = [...shifts, shift];
-    setShifts(updatedShifts);
-    localStorage.setItem('shifts', JSON.stringify(updatedShifts));
+    const { data, error } = await supabase.from('shifts').insert([shift]);
+
+    if (error) {
+      setError('シフトの追加に失敗しました。');
+      return;
+    }
+    if (data && Array.isArray(data)) {
+      setShifts((prevShifts) => [...prevShifts, ...data]);
+    } else {
+      setError('シフトのデータが正しく返されませんでした。');
+    }
     setNewShift({ startTime: '', endTime: '', hours: 0, job: jobRates[0]?.job || '' });
     setError(null);
   };
 
-  const deleteShift = (id: number) => {
-    const updatedShifts = shifts.filter((shift) => shift.id !== id);
-    setShifts(updatedShifts);
-    localStorage.setItem('shifts', JSON.stringify(updatedShifts));
+  const deleteShift = async (id: number) => {
+    const { error } = await supabase.from('shifts').delete().eq('id', id);
+    if (error) {
+      setError('シフトの削除に失敗しました。');
+      return;
+    }
+    setShifts(shifts.filter((shift) => shift.id !== id));
   };
 
   const formatTimeDisplay = (time: string) => {

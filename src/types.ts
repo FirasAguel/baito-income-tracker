@@ -24,6 +24,7 @@ export type Shift = {
 }
 
 export type JobStatistics = {
+  userId: string; 
   job: string;
   daily: {
     income: { [date: string]: number };
