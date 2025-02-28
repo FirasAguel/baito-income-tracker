@@ -1,9 +1,9 @@
-// src/app/shift/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { JobRate } from '../../types';
 import Link from 'next/link';
+import Navbar from '@/components/Navbar';
 
 interface Shift {
   id: number;
@@ -259,8 +259,12 @@ export default function ShiftCalendar() {
     return `${h}時間${m}分`;
   };
 
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <div className="container mx-auto py-10">
+      <Navbar onMenuToggle={setMenuOpen} />
+      {/*<main className={`transition-all ${menuOpen ? 'mt-76' : ''} p-6`}></main>*/}
       <h1 className="mb-4 text-2xl font-bold">シフト管理カレンダー</h1>
       <Link href="/">
         <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">
