@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { JobRate } from '../../types';
 import Link from 'next/link';
-import Navbar from '@/components/Navbar';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import supabase from '@/lib/supabase';
