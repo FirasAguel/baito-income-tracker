@@ -86,7 +86,7 @@ export default function IncomeGoalSetting() {
   return (
     <div className="container mx-auto py-10">
       <h1 className="mb-4 text-2xl font-bold">年収目標設定</h1>
-      <Link href="/">
+      <Link href="/shift">
         <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">戻る</button>
       </Link>
       {message && <div className="mb-4 text-green-500">{message}</div>}
