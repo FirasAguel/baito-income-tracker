@@ -62,7 +62,7 @@ export default function JobSettings() {
         .insert([{ job: newJob, rate, nightRate, user_id: userId }]) 
         .select();
       if (error) {
-        console.error('Error adding job rate:', error);
+        console.error('Error adding job rate:', error.message);
         setError('データ追加に失敗しました。');
       } else {
         setJobRates([...jobRates, ...(data || [])]);
@@ -85,7 +85,7 @@ export default function JobSettings() {
       .eq('user_id', userId); 
 
     if (error) {
-      console.error('Error deleting job rate:', error);
+      console.error('Error deleting job rate:', error.message);
     } else {
       setJobRates(jobRates.filter((j) => j.id !== id));
     }
