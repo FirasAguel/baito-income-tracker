@@ -6,10 +6,10 @@
  * supabase.auth.signOut() メソッドを利用してログアウトを行う
  * 必要に応じでCookieを削除したり、ログアウトメッセージを返す
  */
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import supabase from '@/lib/supabase';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     // 現在のセッションでログアウト
     const { error } = await supabase.auth.signOut();

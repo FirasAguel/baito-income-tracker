@@ -12,6 +12,7 @@ import 'react-big-calendar/lib/addons/dragAndDrop/styles.scss';
 import supabase from '@/lib/supabase';
 
 const locales = {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   'ja-JP': require('date-fns/locale/ja'),
 };
 

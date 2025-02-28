@@ -5,9 +5,8 @@ import Navbar from '@/components/Navbar';
 import { JobRate } from '../../types';
 import Link from 'next/link';
 import 'react-toastify/dist/ReactToastify.css';
-import { toast, ToastContainer } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
 import supabase from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
 
 interface Shift {
   id: number;
@@ -36,7 +35,6 @@ export default function ShiftCalendar() {
   });
   const [userId, setUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
   // Fetch user data, job rates, and shifts from Supabase
   useEffect(() => {
@@ -258,7 +256,7 @@ export default function ShiftCalendar() {
       return;
     }
 
-    const { data, error: insertError } = await supabase
+    const { error: insertError } = await supabase
       .from('shifts')
       .insert([shift]);
     if (insertError) {

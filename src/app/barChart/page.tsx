@@ -41,6 +41,7 @@ const IncomeSummaryPage: React.FC = () => {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [selectedJob, setSelectedJob] = useState<string>('すべて');
   const [selectedYear, setSelectedYear] = useState<string>('all');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {

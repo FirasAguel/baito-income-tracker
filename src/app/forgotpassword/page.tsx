@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
       // メール送信完了
       setIsSubmitted(true);
     } catch (err) {
-      setError('エラーが発生しました');
+      setError('エラーが発生しました: ' + err);
     }
   };
 

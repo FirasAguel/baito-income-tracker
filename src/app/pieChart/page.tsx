@@ -37,6 +37,7 @@ const PieChartPage: React.FC = () => {
     useState<IncomeGoalMapping | null>(null);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -59,7 +60,7 @@ const PieChartPage: React.FC = () => {
 
           const incomeGoals: IncomeGoalMapping = {};
           if (incomeGoalsData) {
-            incomeGoalsData.forEach((record: any) => {
+            incomeGoalsData.forEach((record) => {
               incomeGoals[record.year] = record.income_goal;
             });
           }

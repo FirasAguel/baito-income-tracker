@@ -32,7 +32,7 @@ export default function LoginPage() {
     }
 
     // 用户登录成功后，检查 profiles 表中是否存在此用户的记录
-    const { data: profile, error: profileError } = await supabase
+    const { error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('user_id', data.user.id)
