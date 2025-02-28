@@ -146,7 +146,7 @@ const IncomeSummaryPage: React.FC = () => {
   ];
 
   return (
-    <div className="flex min-h-screen flex-col bg-white text-gray-900">
+    <div className="flex flex-col bg-white text-gray-900">
       <Navbar onMenuToggle={setMenuOpen} />
       <main
         className={`container mx-auto py-10 transition-all ${menuOpen ? 'mt-88' : 'mt-12'} px-4`}
@@ -204,7 +204,7 @@ const IncomeSummaryPage: React.FC = () => {
 
         {/* 棒グラフ */}
         <div className="mb-6">
-          <Bar data={chartData} options={chartOptions} />
+          <Bar data={chartData} options={chartOptions} height={100} />
         </div>
       </main>
     </div>

@@ -173,7 +173,7 @@ const PieChartPage: React.FC = () => {
     <div className="flex min-h-screen flex-col bg-white text-gray-900">
       <Navbar onMenuToggle={setMenuOpen} />
       <main
-        className={`container mx-auto py-10 transition-all ${menuOpen ? 'mt-88' : 'mt-12'} px-4`}
+        className={`container mx-auto flex flex-col py-10 transition-all ${menuOpen ? 'mt-88' : 'mt-12'} px-4`}
       >
         <h1 className="mb-6 text-center text-3xl font-semibold">給料見込</h1>
         <Link href="/home">
@@ -182,49 +182,51 @@ const PieChartPage: React.FC = () => {
           </button>
         </Link>
 
-        {/* 年選択ボタン */}
-        <div className="mb-4 flex flex-wrap justify-center space-x-4">
-          {availableYears.map((year) => (
-            <button
-              key={year}
-              onClick={() => setSelectedYear(year)}
-              className={`rounded-md px-4 py-2 transition ${
-                selectedYear === year
-                  ? 'bg-teal-600 text-white'
-                  : 'bg-teal-300 text-teal-700 hover:bg-teal-400'
-              }`}
-            >
-              {year}
-            </button>
-          ))}
-        </div>
-
-        <h2 className="mb-4 text-2xl font-bold">目標金額：{incomeGoal}円</h2>
-        <PieChart width={400} height={400}>
-          <Pie
-            data={aggregatedPieData}
-            dataKey="income"
-            nameKey="name"
-            cx="50%"
-            cy="50%"
-            outerRadius={150}
-            label={({ name, percentage, income }) =>
-              `${name}: ${percentage}% (${income})`
-            }
-          >
-            {aggregatedPieData.map((entry, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={COLORS[index % COLORS.length]}
-              />
+        <div className="flex flex-col items-center">
+          {/* 年選択ボタン */}
+          <div className="mb-4 flex flex-wrap justify-center space-x-4">
+            {availableYears.map((year) => (
+              <button
+                key={year}
+                onClick={() => setSelectedYear(year)}
+                className={`rounded-md px-4 py-2 transition ${
+                  selectedYear === year
+                    ? 'bg-teal-600 text-white'
+                    : 'bg-teal-300 text-teal-700 hover:bg-teal-400'
+                }`}
+              >
+                {year}
+              </button>
             ))}
-          </Pie>
-          <Tooltip
-            formatter={(value: number, name: string) => [`${value}`, name]}
-          />
-          <Legend />
-        </PieChart>
-        <p className="mt-4 text-lg">給料見込み: {totalShiftsIncome}円</p>
+          </div>
+
+          <h2 className="mb-4 text-2xl font-bold">目標金額：{incomeGoal}円</h2>
+          <PieChart width={640} height={600}>
+            <Pie
+              data={aggregatedPieData}
+              dataKey="income"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={150}
+              label={({ name, percentage, income }) =>
+                `${name}: ${percentage}% (${income})`
+              }
+            >
+              {aggregatedPieData.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={COLORS[index % COLORS.length]}
+                />
+              ))}
+            </Pie>
+            <Tooltip
+              formatter={(value: number, name: string) => [`${value}`, name]}
+            />
+            <Legend />
+          </PieChart>
+          <p className="mt-4 text-lg">給料見込み: {totalShiftsIncome}円</p>
+        </div>
       </main>
     </div>
   );
