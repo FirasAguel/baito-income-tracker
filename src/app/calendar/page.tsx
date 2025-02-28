@@ -173,20 +173,17 @@ export default function ShiftCalendar() {
   }, []);
 
   return (
-    <div className="flex h-screen flex-col">
-      <h1 className="p-4 text-2xl font-bold">シフトカレンダー</h1>
-      <div className="mb-4 flex-grow">
-        <DragAndDropCalendar
-          localizer={localizer}
-          events={events}
-          startAccessor="start"
-          endAccessor="end"
-          style={{ height: '100%' }}
-          onEventDrop={moveEvent}
-          onEventResize={resizeEvent}
-          resizable
-        />
-      </div>
+    <div className="flex-grow">
+      <DragAndDropCalendar
+        localizer={localizer}
+        events={events}
+        startAccessor="start"
+        endAccessor="end"
+        style={{ height: '100%' }}
+        onEventDrop={moveEvent}
+        onEventResize={resizeEvent}
+        resizable
+      />
     </div>
   );
 }
