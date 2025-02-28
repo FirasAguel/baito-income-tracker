@@ -12,14 +12,14 @@ export default function HomePage() {
     const checkUser = async () => {
       const { data } = await supabase.auth.getUser();
       if (!data?.user) {
-        router.push('/login'); // 🚀 未登录，跳转到登录页
+        router.push('/login');
       } else {
-        router.push('/shift/page'); // ✅ 已登录，跳转到 shift/page
+        router.push('/shift'); 
       }
     };
 
     checkUser();
   }, [router]);
 
-  return <p>Loading...</p>; // ✅ 等待检查登录状态
+  return <p>Loading...</p>; 
 }
