@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Navbar from '@/components/Navbar';
 import { JobRate } from '../../types';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
@@ -15,8 +16,8 @@ interface Shift {
   endDate: string;
   job: string;
   hours: number;
-  startTime: string;
-  endTime: string;
+  startTime: string; // 出勤時間
+  endTime: string; // 退社時間
   rate: number;
   nightRate: number;
   income: number;
@@ -75,14 +76,30 @@ export default function ShiftCalendar() {
     fetchUserData();
   }, []);
 
+  useEffect(() => {
+    if (newShift.job) {
+      const foundJob = jobRates.find((j) => j.job === newShift.job);
+      if (foundJob) {
+        setNewShift((prev) => ({
+          ...prev,
+          rate: foundJob.rate,
+          nightRate: foundJob.nightRate,
+        }));
+      }
+    }
+  }, [newShift.job, jobRates]);
+
+  // Calculate work hours (退社時間 - 出勤時間)
   // Helper functions
   const calculateWorkHours = (startTime: string, endTime: string): number => {
     const start = new Date(startTime);
     const end = new Date(endTime);
     const diffInMs = end.getTime() - start.getTime();
     return diffInMs / (1000 * 60 * 60);
+    return diffInMs / (1000 * 60 * 60);
   };
 
+  // Calculate end time (出勤時間 + 勤務時間)
   // Calculate end time (出勤時間 + 勤務時間)
   const calculateEndTime = (startTime: string, hours: number): string => {
     const start = new Date(startTime);
@@ -102,7 +119,8 @@ export default function ShiftCalendar() {
   // Calculate start time (退社時間 - 勤務時間)
   const calculateStartTime = (endTime: string, hours: number): string => {
     const end = new Date(endTime);
-    end.setMinutes(end.getMinutes() - hours * 60);
+    const totalMinutes = hours * 60;
+    end.setMinutes(end.getMinutes() - totalMinutes);
     return end
       .toLocaleString('ja-JP', {
         hour12: false,
