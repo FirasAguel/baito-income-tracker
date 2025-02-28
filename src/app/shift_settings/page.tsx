@@ -3,6 +3,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 import Navbar from '@/components/Navbar';
 
 interface JobRate {
@@ -17,51 +22,75 @@ export default function JobSettings() {
   const [jobRates, setJobRates] = useState<JobRate[]>([]);
   const [newJob, setNewJob] = useState('');
   const [newRate, setNewRate] = useState<number | ''>('');
+  const [userId, setUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const savedJobRates = localStorage.getItem('jobRates');
-    if (savedJobRates) {
-      const parsedJobRates = JSON.parse(savedJobRates).map((job: JobRate) => ({
-        ...job,
-        rate: Number(job.rate) || 0,
-        nightRate:
-          Math.round(Number(job.nightRate)) ||
-          Math.round(Number(job.rate) * 1.25),
-      }));
-      setJobRates(parsedJobRates);
-    } else {
-      setJobRates([
-        { id: 1, job: 'コンビニ', rate: 1200, nightRate: 1200 * 1.25 },
-        { id: 2, job: 'カフェ', rate: 1300, nightRate: 1300 * 1.25 },
-      ]);
-    }
+    const fetchUserData = async () => {
+      const { data, error } = await supabase.auth.getUser();
+
+      if (error) {
+        console.error('Error getting user:', error.message);
+        setError('ユーザー情報を取得できませんでした。');
+        return;
+      }
+
+      setUserId(data?.user.id || null);
+
+      if (data?.user.id) {
+        const { data: jobRatesData, error: jobRatesError } = await supabase
+          .from('job_rates')
+          .select('*')
+          .eq('user_id', data.user.id);
+
+        if (jobRatesError) {
+          setError('勤務先情報を取得できませんでした。');
+          console.error(jobRatesError);
+        } else {
+          setJobRates(jobRatesData || []);
+        }
+      }
+    };
+
+    fetchUserData();
   }, []);
 
-  const addJobRate = () => {
+  const addJobRate = async () => {
     if (newJob && newRate) {
-      const newId =
-        jobRates.length > 0 ? jobRates[jobRates.length - 1].id + 1 : 1;
       const rate = Number(newRate) || 0;
       const nightRate = Math.round(rate * 1.25);
-      const updatedJobRates = [
-        ...jobRates,
-        { id: newId, job: newJob, rate, nightRate },
-      ];
-      setJobRates(updatedJobRates);
-      localStorage.setItem('jobRates', JSON.stringify(updatedJobRates));
-      setNewJob('');
-      setNewRate('');
-      setError(null);
+      const { data, error } = await supabase
+        .from('job_rates')
+        .insert([{ job: newJob, rate, nightRate, user_id: userId }])
+        .select();
+      if (error) {
+        console.error('Error adding job rate:', error.message);
+        setError('データ追加に失敗しました。');
+      } else {
+        setJobRates([...jobRates, ...(data || [])]);
+        setNewJob('');
+        setNewRate('');
+        setError(null);
+      }
     } else {
       setError('勤務先と時給を入力してください。');
     }
   };
 
-  const deleteJobRate = (id: number) => {
-    const updatedJobRates = jobRates.filter((j) => j.id !== id);
-    setJobRates(updatedJobRates);
-    localStorage.setItem('jobRates', JSON.stringify(updatedJobRates));
+  const deleteJobRate = async (id: number) => {
+    if (!userId) return;
+
+    const { error } = await supabase
+      .from('job_rates')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error deleting job rate:', error.message);
+    } else {
+      setJobRates(jobRates.filter((j) => j.id !== id));
+    }
   };
 
   return (

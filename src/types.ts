@@ -24,10 +24,15 @@ export type Shift = {
 };
 
 export type JobStatistics = {
+  user_id: string;
   job: string;
   daily: {
     income: { [date: string]: number };
     hours: { [date: string]: number };
+  };
+  weekly: {
+    income: { [week: string]: number };
+    hours: { [week: string]: number };
   };
   monthly: {
     income: { [month: string]: number };

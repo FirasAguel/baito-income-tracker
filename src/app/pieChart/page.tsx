@@ -1,3 +1,4 @@
+// src/app/pieChart/page.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -5,6 +6,21 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import { JobStatistics, IncomeGoal } from '../../types';
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
+import { createClient } from '@supabase/supabase-js';
+
+// You may have a Shift type defined in your types file, but here's a minimal version:
+type Shift = {
+  id: number;
+  endDate: string;
+  income: number;
+  job: string;
+};
+
+type IncomeGoalMapping = { [year: string]: number };
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const COLORS = [
   '#0088FE',
@@ -15,6 +31,7 @@ const COLORS = [
   '#D65DB1',
   '#FF6F91',
   '#FF9671',
+  '#FF9671',
 ];
 
 const PieChartPage: React.FC = () => {
@@ -22,83 +39,133 @@ const PieChartPage: React.FC = () => {
   const [incomeGoalData, setIncomeGoalData] = useState<IncomeGoal | null>(null);
   const [jobStatistics, setJobStatistics] = useState<JobStatistics[]>([]);
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const incomeGoalStr = localStorage.getItem('incomeGoals');
-    const jobStatisticsStr = localStorage.getItem('jobStatistics');
+    const fetchUserData = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        // Fetch income goals for the user
+        const { data: incomeGoalsData, error: incomeGoalsError } =
+          await supabase
+            .from('income_goals')
+            .select('*')
+            .eq('user_id', user.id);
+        if (incomeGoalsError) {
+          console.error('Error fetching income goals:', incomeGoalsError);
+        }
 
-    if (incomeGoalStr && jobStatisticsStr) {
-      try {
-        const parsedIncomeGoal = JSON.parse(incomeGoalStr) as IncomeGoal;
-        const parsedJobStatistics = JSON.parse(
-          jobStatisticsStr
-        ) as JobStatistics[];
-        setIncomeGoalData(parsedIncomeGoal);
-        setJobStatistics(parsedJobStatistics);
+        const incomeGoals: IncomeGoalMapping = {};
+        if (incomeGoalsData) {
+          incomeGoalsData.forEach((record: any) => {
+            incomeGoals[record.year] = record.income_goal;
+          });
+        }
+        setIncomeGoalData(incomeGoals);
 
-        const allYears = [
-          ...new Set([
-            ...Object.keys(parsedIncomeGoal),
-            ...parsedJobStatistics.flatMap((job) =>
-              Object.keys(job.yearly.income)
-            ),
-          ]),
-        ].sort();
+        // Fetch raw shifts for the user
+        const { data: shiftsData, error: shiftsError } = await supabase
+          .from('shifts')
+          .select('*')
+          .eq('user_id', user.id);
+        if (shiftsError) {
+          console.error('Error fetching shifts:', shiftsError);
+        }
+        if (shiftsData) {
+          setShifts(shiftsData as Shift[]);
+        }
 
+        // Determine available years from income goals and shifts
+        const shiftYears = shiftsData
+          ? Array.from(
+              new Set(
+                shiftsData.map((shift: Shift) =>
+                  new Date(shift.endDate).getFullYear().toString()
+                )
+              )
+            )
+          : [];
+        const availableYears = Array.from(
+          new Set([...Object.keys(incomeGoals), ...shiftYears])
+        ).sort();
         const currentYear = new Date().getFullYear().toString();
-        if (allYears.includes(currentYear)) {
+        if (availableYears.includes(currentYear)) {
           setSelectedYear(currentYear);
+        } else if (availableYears.length > 0) {
+          setSelectedYear(availableYears[0]);
         }
       } catch (error) {
-        console.error('localStorage データの解析エラー:', error);
+        console.error("localStorage データの解析エラー:", error);
       }
-    }
+    };
+    fetchUserData();
   }, []);
 
-  if (!incomeGoalData || jobStatistics.length === 0 || !selectedYear) {
+  if (!incomeGoalData || shifts.length === 0 || !selectedYear) {
     return (
+      <div className="flex h-screen items-center justify-center text-xl">
       <div className="flex h-screen items-center justify-center text-xl">
         Loading...
       </div>
     );
   }
 
-  const availableYears = [
-    ...new Set([
-      ...Object.keys(incomeGoalData),
-      ...jobStatistics.flatMap((job) => Object.keys(job.yearly.income)),
-    ]),
-  ].sort();
+  // Compute available years for the buttons
+  const shiftYears = shifts.map((shift) =>
+    new Date(shift.endDate).getFullYear().toString()
+  );
+  const availableYears = Array.from(
+    new Set([...Object.keys(incomeGoalData), ...shiftYears])
+  ).sort();
 
   const incomeGoal =
-    (selectedYear as keyof IncomeGoal) in incomeGoalData
-      ? incomeGoalData[selectedYear as keyof IncomeGoal]
-      : 0;
+    selectedYear in incomeGoalData ? incomeGoalData[selectedYear] : 0;
   const numericIncomeGoal =
     typeof incomeGoal === 'string' ? Number(incomeGoal) : incomeGoal;
 
-  const individualJobs = jobStatistics.filter((job) => job.job !== 'all');
-  const totalJobIncome = individualJobs.reduce((acc, job) => {
-    return acc + (job.yearly.income[selectedYear] || 0);
-  }, 0);
+  // Filter shifts for the selected year
+  const shiftsInYear = shifts.filter(
+    (shift) => new Date(shift.endDate).getFullYear().toString() === selectedYear
+  );
 
-  const pieData = individualJobs.map((job) => {
-    const income = job.yearly.income[selectedYear] || 0;
-    return {
-      name: job.job,
+  // Aggregate income for each unique job from shiftsInYear
+  const aggregatedJobs = shiftsInYear.reduce(
+    (acc: Record<string, number>, shift) => {
+      const income = Number(shift.income) || 0;
+      acc[shift.job] = (acc[shift.job] || 0) + income;
+      return acc;
+    },
+    {}
+  );
+
+  // Build pie chart data
+  const aggregatedPieData = Object.entries(aggregatedJobs).map(
+    ([job, income]) => ({
+      name: job,
       income,
       percentage:
         numericIncomeGoal > 0
           ? ((income / numericIncomeGoal) * 100).toFixed(2)
           : '0.00',
-    };
-  });
+    })
+  );
 
-  const remainingIncome = numericIncomeGoal - totalJobIncome;
-  if (remainingIncome > 0) {
-    pieData.push({
+  // Total income from all shifts for the year
+  const totalAllJobsIncome = shiftsInYear.reduce(
+    (acc, shift) => acc + (Number(shift.income) || 0),
+    0
+  );
+
+  // If the total income is less than the target, add a slice for the remaining target
+  if (numericIncomeGoal > totalAllJobsIncome) {
+    const remainingIncome = numericIncomeGoal - totalAllJobsIncome;
+    aggregatedPieData.push({
       name: '未達成',
       income: remainingIncome,
+      percentage: ((remainingIncome / numericIncomeGoal) * 100).toFixed(2),
       percentage: ((remainingIncome / numericIncomeGoal) * 100).toFixed(2),
     });
   }

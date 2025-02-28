@@ -1,28 +1,24 @@
 'use client';
 
-import { useState } from 'react';
-import Navbar from '@/components/Navbar';
-import Calendar from '@/app/calendar/page';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import supabase from '@/lib/supabase';
 
-export default function Home() {
-  const [menuOpen, setMenuOpen] = useState(false);
+export default function HomePage() {
+  const router = useRouter();
 
-  return (
-    <div className="flex min-h-screen flex-col bg-white text-gray-900">
-      <Navbar onMenuToggle={setMenuOpen} />
-      <main
-        className={`flex items-center justify-center transition-all ${
-          menuOpen ? 'mt-76' : ''
-        }`}
-      >
-        <div
-          className={`flex pt-24 pb-6 transition-all duration-300 ${
-            menuOpen ? 'h-[64vh]' : 'h-[80vh]'
-          } w-5/6`}
-        >
-          <Calendar />
-        </div>
-      </main>
-    </div>
-  );
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data?.user) {
+        router.push('/login');
+      } else {
+        router.push('/shift');
+      }
+    };
+
+    checkUser();
+  }, [router]);
+
+  return <p>Loading...</p>;
 }
