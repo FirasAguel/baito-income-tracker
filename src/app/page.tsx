@@ -17,8 +17,8 @@ export default function Home() {
       >
         <div
           className={`flex pt-24 pb-6 transition-all duration-300 ${
-            menuOpen ? 'h-[64vh] w-5/6' : 'h-[80vh] w-2/3'
-          }`}
+            menuOpen ? 'h-[64vh]' : 'h-[80vh]'
+          } w-5/6`}
         >
           <Calendar />
         </div>
