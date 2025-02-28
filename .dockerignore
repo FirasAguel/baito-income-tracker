@@ -1,0 +1,22 @@
+# Ignore node_modules and related cache
+node_modules
+npm-debug.log
+pnpm-debug.log
+
+# Build output and cache
+.next
+out
+
+# System and editor files
+Dockerfile
+.dockerignore
+.git
+.gitignore
+.github
+.vscode
+.env
+.env.*
+.prettierrc
+.prettierignore
+README.md
+eslint.config.mjs
