@@ -42,9 +42,9 @@ jobs:
       - name: Lint code with ESLint
         run: pnpm lint
 
-      # # Step 7: TypeScript Type Check
-      # - name: TypeScript type checking
-      #   run: pnpm tsc --noEmit
+      # Step 7: TypeScript Type Check
+      - name: TypeScript type checking
+        run: pnpm tsc --noEmit
 
       # Step 8: Build the Next.js app
       - name: Build Next.js app
