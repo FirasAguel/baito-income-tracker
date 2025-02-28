@@ -14,12 +14,12 @@ export default function HomePage() {
       if (!data?.user) {
         router.push('/login');
       } else {
-        router.push('/shift'); 
+        router.push('/shift');
       }
     };
 
     checkUser();
   }, [router]);
 
-  return <p>Loading...</p>; 
+  return <p>Loading...</p>;
 }

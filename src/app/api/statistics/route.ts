@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
 import supabase from '@/lib/supabase';
-import { Shift, JobStatistics } from "../../../types";
+import { Shift, JobStatistics } from '../../../types';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function GET(req: Request) {
   try {
-    const { data: shifts, error: shiftsError } = await supabase.from('shifts').select('*');
-    const { data: jobRates, error: jobRatesError } = await supabase.from('job_rates').select('*');
+    const { data: shifts, error: shiftsError } = await supabase
+      .from('shifts')
+      .select('*');
+    const { data: jobRates, error: jobRatesError } = await supabase
+      .from('job_rates')
+      .select('*');
 
     if (shiftsError || jobRatesError) {
       throw new Error(shiftsError?.message || jobRatesError?.message);
@@ -15,7 +19,10 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const selectedJob = url.searchParams.get('job') || 'all';
 
-    const getSums = (shiftsData: Shift[], type: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
+    const getSums = (
+      shiftsData: Shift[],
+      type: 'daily' | 'weekly' | 'monthly' | 'yearly'
+    ) => {
       const incomeSums: Record<string, number> = {};
       const hoursSums: Record<string, number> = {};
 
@@ -32,7 +39,8 @@ export async function GET(req: Request) {
           key = `${startOfWeek.getFullYear()}-${(startOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${startOfWeek.getDate().toString().padStart(2, '0')}`;
         } else if (type === 'monthly') {
           key = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-        } else { // yearly
+        } else {
+          // yearly
           key = date.getFullYear().toString();
         }
 
@@ -48,35 +56,42 @@ export async function GET(req: Request) {
       return { income: incomeSums, hours: hoursSums };
     };
 
-    const filteredShifts = selectedJob === 'all' ? shifts : shifts.filter(shift => shift.job === selectedJob);
+    const filteredShifts =
+      selectedJob === 'all'
+        ? shifts
+        : shifts.filter((shift) => shift.job === selectedJob);
 
-    const stats: JobStatistics[] = await Promise.all(jobRates.map(async (jobRate) => {
-      const job = jobRate.job;
-      const jobShifts = shifts.filter((shift) => shift.job === job);
+    const stats: JobStatistics[] = await Promise.all(
+      jobRates.map(async (jobRate) => {
+        const job = jobRate.job;
+        const jobShifts = shifts.filter((shift) => shift.job === job);
 
-      const user_id = jobRate.user_id; 
+        const user_id = jobRate.user_id;
 
-      return {
-        id: uuidv4(), 
-        user_id,
-        job,
-        daily: getSums(jobShifts, 'daily'),
-        weekly: getSums(jobShifts, 'weekly'),
-        monthly: getSums(jobShifts, 'monthly'),
-        yearly: {
-          income: Object.fromEntries(
-            Object.entries(getSums(jobShifts, 'yearly').income).map(([year, income]) => [year, income])
-          ),
-        },
-      };
-    }));
+        return {
+          id: uuidv4(),
+          user_id,
+          job,
+          daily: getSums(jobShifts, 'daily'),
+          weekly: getSums(jobShifts, 'weekly'),
+          monthly: getSums(jobShifts, 'monthly'),
+          yearly: {
+            income: Object.fromEntries(
+              Object.entries(getSums(jobShifts, 'yearly').income).map(
+                ([year, income]) => [year, income]
+              )
+            ),
+          },
+        };
+      })
+    );
 
     jobRates.forEach((jobRate) => {
-      const user_id = jobRate.user_id; 
+      const user_id = jobRate.user_id;
       const userShifts = shifts.filter((shift) => shift.user_id === user_id);
 
       const allJobStats: JobStatistics = {
-        id: uuidv4(), 
+        id: uuidv4(),
         user_id,
         job: 'all',
         daily: getSums(userShifts, 'daily'),
@@ -84,7 +99,9 @@ export async function GET(req: Request) {
         monthly: getSums(userShifts, 'monthly'),
         yearly: {
           income: Object.fromEntries(
-            Object.entries(getSums(userShifts, 'yearly').income).map(([year, income]) => [year, income])
+            Object.entries(getSums(userShifts, 'yearly').income).map(
+              ([year, income]) => [year, income]
+            )
           ),
         },
       };
@@ -92,7 +109,9 @@ export async function GET(req: Request) {
       stats.push(allJobStats);
     });
 
-    const { error: statsError } = await supabase.from('job_statistics').upsert(stats);
+    const { error: statsError } = await supabase
+      .from('job_statistics')
+      .upsert(stats);
     if (statsError) {
       throw new Error(statsError.message);
     }
@@ -100,6 +119,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ stats }, { status: 200 });
   } catch (error) {
     console.error('Error fetching statistics:', error);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json(
+      { message: 'Internal Server Error' },
+      { status: 500 }
+    );
   }
 }

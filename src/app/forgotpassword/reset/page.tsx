@@ -1,8 +1,8 @@
 'use client';
 /**
  * /app/forgotpassword/reset/page.tsx
- * 
- * 
+ *
+ *
  * ResetPasswordPage:
  * メールに記載されたリンク(redirectTo) でアクセスする画面。
  * ユーザーが新しいパスワードを入力し、supabase.auth.updateUser({ password }) で更新します。
@@ -28,7 +28,9 @@ export default function ResetPasswordPage() {
 
     try {
       // supabase.auth.updateUser() を呼ぶと、現在の一時セッションでパスワードを更新できる
-      const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+      const { data, error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
       if (error) {
         setError(error.message || 'パスワードの更新に失敗しました。');
         return;
@@ -49,9 +51,9 @@ export default function ResetPasswordPage() {
   // 更新成功時に表示
   if (success) {
     return (
-      <div className="max-w-md mx-auto mt-8 bg-white p-4 shadow">
-        <h2 className="text-2xl mb-4">パスワード再設定</h2>
-        <p className="text-green-600 mb-4">{success}</p>
+      <div className="mx-auto mt-8 max-w-md bg-white p-4 shadow">
+        <h2 className="mb-4 text-2xl">パスワード再設定</h2>
+        <p className="mb-4 text-green-600">{success}</p>
         <p>ログインページへ移動中...</p>
       </div>
     );
@@ -59,23 +61,23 @@ export default function ResetPasswordPage() {
 
   // 通常フォーム
   return (
-    <div className="max-w-md mx-auto mt-8 bg-white p-4 shadow">
-      <h2 className="text-2xl mb-4">新しいパスワードを設定</h2>
-      {error && <p className="text-red-600 mb-4">{error}</p>}
+    <div className="mx-auto mt-8 max-w-md bg-white p-4 shadow">
+      <h2 className="mb-4 text-2xl">新しいパスワードを設定</h2>
+      {error && <p className="mb-4 text-red-600">{error}</p>}
 
       <form onSubmit={handleResetPassword} className="space-y-4">
         <div>
-          <label className="block mb-1">新しいパスワード</label>
+          <label className="mb-1 block">新しいパスワード</label>
           <input
             type="password"
-            className="border px-2 py-1 w-full"
+            className="w-full border px-2 py-1"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             required
           />
         </div>
         <button
-          className="bg-blue-500 text-white px-4 py-2 rounded"
+          className="rounded bg-blue-500 px-4 py-2 text-white"
           type="submit"
         >
           パスワードを更新

@@ -9,7 +9,9 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('SupabaseのURLまたはAnonキーが設定されていません。envファイルを確認してください。');
+  throw new Error(
+    'SupabaseのURLまたはAnonキーが設定されていません。envファイルを確認してください。'
+  );
 }
 
 // クライアントの作成（クライアントサイドで利用）

@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import supabase from "@/lib/supabase";
-import { User } from "@supabase/supabase-js"; // ✅ 确保导入 Supabase User 类型
+import { useEffect, useState } from 'react';
+import supabase from '@/lib/supabase';
+import { User } from '@supabase/supabase-js'; // ✅ 确保导入 Supabase User 类型
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null); // ✅ 设置正确的类型
@@ -18,9 +18,11 @@ export function useAuth() {
     fetchUser();
 
     // 监听用户状态变化
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null); // ✅ 兼容 null
-    });
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user || null); // ✅ 兼容 null
+      }
+    );
 
     return () => {
       authListener.subscription.unsubscribe();
@@ -28,9 +30,12 @@ export function useAuth() {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
     if (error) {
-      console.error("Login error:", error.message);
+      console.error('Login error:', error.message);
       return false;
     }
     setUser(data.user); // ✅ 这里也不会报错

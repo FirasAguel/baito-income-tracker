@@ -1,14 +1,14 @@
 export type JobRate = {
-    id: number;
-    job: string;
-    rate: number;
-    nightRate: number;
-  };
+  id: number;
+  job: string;
+  rate: number;
+  nightRate: number;
+};
 
 export type IncomeGoal = {
-    year: string;
-    incomeGoal: number;
-  };
+  year: string;
+  incomeGoal: number;
+};
 
 export type Shift = {
   id: number;
@@ -16,15 +16,15 @@ export type Shift = {
   endDate: string;
   job: string;
   hours: number;
-  startTime: string; 
-  endTime: string;   
+  startTime: string;
+  endTime: string;
   rate: number;
   nightRate: number;
   income: number;
-}
+};
 
 export type JobStatistics = {
-  user_id: string; 
+  user_id: string;
   job: string;
   daily: {
     income: { [date: string]: number };
@@ -41,4 +41,4 @@ export type JobStatistics = {
   yearly: {
     income: { [year: string]: number };
   };
-}
+};

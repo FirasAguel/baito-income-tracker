@@ -59,7 +59,7 @@ export default function JobSettings() {
       const nightRate = Math.round(rate * 1.25);
       const { data, error } = await supabase
         .from('job_rates')
-        .insert([{ job: newJob, rate, nightRate, user_id: userId }]) 
+        .insert([{ job: newJob, rate, nightRate, user_id: userId }])
         .select();
       if (error) {
         console.error('Error adding job rate:', error.message);
@@ -82,7 +82,7 @@ export default function JobSettings() {
       .from('job_rates')
       .delete()
       .eq('id', id)
-      .eq('user_id', userId); 
+      .eq('user_id', userId);
 
     if (error) {
       console.error('Error deleting job rate:', error.message);
@@ -91,12 +91,13 @@ export default function JobSettings() {
     }
   };
 
-
   return (
     <div className="container mx-auto py-10">
       <h1 className="mb-4 text-2xl font-bold">勤務先と時給設定</h1>
       <Link href="/shift">
-        <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">戻る</button>
+        <button className="mb-4 rounded bg-gray-500 px-4 py-2 text-white">
+          戻る
+        </button>
       </Link>
       {error && <div className="mb-4 text-red-500">{error}</div>}
 
@@ -111,7 +112,7 @@ export default function JobSettings() {
         <input
           type="number"
           placeholder="時給"
-          className="mr-2 border p-2 w-24"
+          className="mr-2 w-24 border p-2"
           value={newRate}
           onChange={(e) => setNewRate(Number(e.target.value) || '')}
         />

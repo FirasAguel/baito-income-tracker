@@ -2,7 +2,7 @@
 /**
  * /app/signup/page.tsx
  * サインアップ画面
- * 
+ *
  * ユーザーがメールアドレス・パスワードを入力し "/api/signup" にPOSTする。
  * 成功時にログイン画面へ誘導するシンプルな例。
  */
@@ -37,27 +37,26 @@ export default function SignUpPage() {
       setLoading(false);
       return;
     }
-    
-    
-    console.log("SignUp Response:", data, error);
-    
+
+    console.log('SignUp Response:', data, error);
+
     setSuccess('登録が成功しました。ログインしてください。');
     setTimeout(() => router.push('/login'), 2000);
   };
 
   return (
-    <div className="max-w-md mx-auto mt-8 bg-white p-6 shadow-lg rounded-lg">
-      <h2 className="text-2xl font-bold mb-4 text-center">サインアップ</h2>
+    <div className="mx-auto mt-8 max-w-md rounded-lg bg-white p-6 shadow-lg">
+      <h2 className="mb-4 text-center text-2xl font-bold">サインアップ</h2>
 
-      {error && <p className="text-red-600 mb-4">{error}</p>}
-      {success && <p className="text-green-600 mb-4">{success}</p>}
+      {error && <p className="mb-4 text-red-600">{error}</p>}
+      {success && <p className="mb-4 text-green-600">{success}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium">メールアドレス</label>
           <input
             type="email"
-            className="border px-3 py-2 w-full rounded"
+            className="w-full rounded border px-3 py-2"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -67,7 +66,7 @@ export default function SignUpPage() {
           <label className="block text-sm font-medium">パスワード</label>
           <input
             type="password"
-            className="border px-3 py-2 w-full rounded"
+            className="w-full rounded border px-3 py-2"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -76,10 +75,10 @@ export default function SignUpPage() {
 
         <button
           type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded w-full"
+          className="w-full rounded bg-blue-500 px-4 py-2 text-white"
           disabled={loading}
         >
-          {loading ? "登録中..." : "サインアップ"}
+          {loading ? '登録中...' : 'サインアップ'}
         </button>
       </form>
 

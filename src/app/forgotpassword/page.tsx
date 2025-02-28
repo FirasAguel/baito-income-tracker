@@ -47,13 +47,13 @@ export default function ForgotPasswordPage() {
   // メール送信完了時の表示
   if (isSubmitted) {
     return (
-      <div className="max-w-md mx-auto mt-8 bg-white p-4 shadow">
-        <h2 className="text-2xl mb-4">パスワード再設定</h2>
+      <div className="mx-auto mt-8 max-w-md bg-white p-4 shadow">
+        <h2 className="mb-4 text-2xl">パスワード再設定</h2>
         <p className="mb-4">
           入力されたメールアドレスに再発行用のリンクを送信しました。
         </p>
         <button
-          className="bg-blue-500 text-white px-4 py-2 rounded"
+          className="rounded bg-blue-500 px-4 py-2 text-white"
           onClick={() => router.push('/login')}
         >
           ログインへ戻る
@@ -64,23 +64,23 @@ export default function ForgotPasswordPage() {
 
   // 通常のフォーム表示
   return (
-    <div className="max-w-md mx-auto mt-8 bg-white p-4 shadow">
-      <h2 className="text-2xl mb-4">パスワード再設定</h2>
-      {error && <p className="text-red-600 mb-4">{error}</p>}
+    <div className="mx-auto mt-8 max-w-md bg-white p-4 shadow">
+      <h2 className="mb-4 text-2xl">パスワード再設定</h2>
+      {error && <p className="mb-4 text-red-600">{error}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label>メールアドレス</label>
           <input
             type="email"
-            className="border px-2 py-1 w-full"
+            className="w-full border px-2 py-1"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
         </div>
         <button
-          className="bg-blue-500 text-white px-4 py-2 rounded"
+          className="rounded bg-blue-500 px-4 py-2 text-white"
           type="submit"
         >
           リセットメールを送信

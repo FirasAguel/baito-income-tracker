@@ -21,7 +21,7 @@ export default function LoginPage() {
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
-      password
+      password,
     });
 
     if (error) {
@@ -58,17 +58,17 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-8 bg-white p-6 shadow-lg rounded-lg">
-      <h2 className="text-2xl font-bold mb-4 text-center">ログイン</h2>
-      
-      {error && <p className="text-red-600 mb-4">{error}</p>}
+    <div className="mx-auto mt-8 max-w-md rounded-lg bg-white p-6 shadow-lg">
+      <h2 className="mb-4 text-center text-2xl font-bold">ログイン</h2>
+
+      {error && <p className="mb-4 text-red-600">{error}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium">メールアドレス</label>
           <input
             type="email"
-            className="border px-3 py-2 w-full rounded"
+            className="w-full rounded border px-3 py-2"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -78,7 +78,7 @@ export default function LoginPage() {
           <label className="block text-sm font-medium">パスワード</label>
           <input
             type="password"
-            className="border px-3 py-2 w-full rounded"
+            className="w-full rounded border px-3 py-2"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -87,7 +87,10 @@ export default function LoginPage() {
 
         {/* 忘记密码 & 注册 */}
         <div className="flex items-center justify-between text-sm">
-          <Link href="/forgotpassword" className="text-blue-600 hover:underline">
+          <Link
+            href="/forgotpassword"
+            className="text-blue-600 hover:underline"
+          >
             パスワードをお忘れの方
           </Link>
           <Link href="/signup" className="text-blue-600 hover:underline">
@@ -98,10 +101,10 @@ export default function LoginPage() {
         {/* 登录按钮 */}
         <button
           type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded w-full"
+          className="w-full rounded bg-blue-500 px-4 py-2 text-white"
           disabled={loading}
         >
-          {loading ? "ログイン中..." : "ログイン"}
+          {loading ? 'ログイン中...' : 'ログイン'}
         </button>
       </form>
     </div>
