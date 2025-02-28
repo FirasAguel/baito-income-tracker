@@ -30,6 +30,7 @@ export default function IncomeGoalSetting() {
 
   const handleSave = () => {
     const storedData = localStorage.getItem('incomeGoals');
+    // eslint-disable-next-line
     let incomeGoals: { [key: string]: number } = storedData
       ? JSON.parse(storedData)
       : {};

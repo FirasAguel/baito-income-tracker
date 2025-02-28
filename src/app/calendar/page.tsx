@@ -22,6 +22,7 @@ interface Shift {
 }
 
 const locales = {
+  // eslint-disable-next-line
   'ja-JP': require('date-fns/locale/ja'),
 };
 
