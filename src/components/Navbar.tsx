@@ -67,7 +67,7 @@ export default function Navbar({
 
       {/* Mobile Menu Toggle */}
       <button className="md:hidden" onClick={toggleMenu}>
-        🍔
+        ☰
       </button>
 
       {/* Mobile Dropdown Menu */}
