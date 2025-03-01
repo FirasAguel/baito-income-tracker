@@ -36,7 +36,6 @@ export default function ShiftCalendar() {
   });
   const [userId, setUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
   // Fetch user data, job rates, and shifts from Supabase
   useEffect(() => {
