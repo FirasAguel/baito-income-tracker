@@ -321,8 +321,10 @@ export default function ShiftCalendar() {
     const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
     const monday = new Date(today);
     monday.setDate(today.getDate() + mondayOffset);
+    monday.setHours(0, 0, 0, 0);
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999); 
 
     // Sum hours for shifts within the current week
     const weeklyShifts = shifts.filter((shift) => {
@@ -342,7 +344,8 @@ export default function ShiftCalendar() {
       (acc, shift) => acc + shift.income,
       0
     );
-
+    console.log(weeklyShifts);
+    console.log(weeklyHours);
     // Weekly warning: if between 35 and 40 hours, show remaining hours warning
     if (weeklyHours >= 35 && weeklyHours < 40) {
       const remainingHours = 40 - weeklyHours;
