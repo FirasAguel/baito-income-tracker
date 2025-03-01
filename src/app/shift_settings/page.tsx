@@ -132,7 +132,7 @@ export default function JobSettings() {
 
         <table className="min-w-full table-auto">
           <thead>
-            <tr className="bg-gray-200">
+            <tr className="bg-[#c7dfde]">
               <th className="px-4 py-2">勤務先</th>
               <th className="px-4 py-2">通常時給 (円)</th>
               <th className="px-4 py-2">深夜時給 (円)</th>

@@ -176,7 +176,7 @@ export default function IncomeStatistics() {
         <h2 className="mb-2 text-xl font-semibold">日別履歴</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full table-auto border-collapse border border-gray-200">
-            <thead className="bg-gray-200">
+            <thead className="bg-[#c7dfde]">
               <tr>
                 <th className="border border-gray-200 px-4 py-2">日付</th>
                 <th className="border border-gray-200 px-4 py-2">収入</th>
@@ -201,7 +201,7 @@ export default function IncomeStatistics() {
         <h2 className="mb-2 text-xl font-semibold">月別収入履歴</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full table-auto border-collapse border border-gray-200">
-            <thead className="bg-gray-200">
+            <thead className="bg-[#c7dfde]">
               <tr>
                 <th className="border border-gray-200 px-4 py-2">月</th>
                 <th className="border border-gray-200 px-4 py-2">収入</th>
@@ -226,7 +226,7 @@ export default function IncomeStatistics() {
         <h2 className="mb-2 text-xl font-semibold">年別収入履歴</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full table-auto border-collapse border border-gray-200">
-            <thead className="bg-gray-200">
+            <thead className="bg-[#c7dfde]">
               <tr>
                 <th className="border border-gray-200 px-4 py-2">年</th>
                 <th className="border border-gray-200 px-4 py-2">収入</th>

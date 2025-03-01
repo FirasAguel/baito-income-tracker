@@ -451,7 +451,7 @@ export default function ShiftCalendar() {
         {/* Shifts List Table */}
         <table className="min-w-full table-auto">
           <thead>
-            <tr className="bg-gray-200">
+            <tr className="bg-[#c7dfde]">
               <th className="px-4 py-2">日付</th>
               <th className="px-4 py-2">勤務先</th>
               <th className="px-4 py-2">出勤時間</th>
