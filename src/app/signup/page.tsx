@@ -27,7 +27,7 @@ export default function SignUpPage() {
     setSuccess('');
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
     });
@@ -37,8 +37,6 @@ export default function SignUpPage() {
       setLoading(false);
       return;
     }
-
-    console.log('SignUp Response:', data, error);
 
     setSuccess('登録が成功しました。ログインしてください。');
     setTimeout(() => router.push('/login'), 2000);

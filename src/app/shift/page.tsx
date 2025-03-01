@@ -44,7 +44,6 @@ export default function ShiftCalendar() {
       } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
-        console.log('Current user ID:', user.id);
         const { data: jobRatesData } = await supabase
           .from('job_rates')
           .select('*')
@@ -346,7 +345,6 @@ export default function ShiftCalendar() {
     // Weekly warning: if between 35 and 40 hours, show remaining hours warning
     if (weeklyHours >= 35 && weeklyHours < 40) {
       const remainingHours = 40 - weeklyHours;
-      console.log('Showing weekly warning toast');
       toast.warning(`今週はあと${remainingHours}時間働けます.`, {
         position: 'top-right',
         autoClose: 10000,
@@ -360,7 +358,6 @@ export default function ShiftCalendar() {
       const remainingIncome103 = Math.floor((1030000 - yearlyIncome) / 10000);
       const displayRemaining103 =
         remainingIncome103 > 0 ? `${remainingIncome103}万円` : '1万円未満';
-      console.log('Showing yearly warning toast for 103万円');
       toast.warning(
         `今年はあと${displayRemaining103}で103万円の壁を超えてしまいます.`,
         {
@@ -374,7 +371,6 @@ export default function ShiftCalendar() {
       const remainingIncome130 = Math.floor((1300000 - yearlyIncome) / 10000);
       const displayRemaining130 =
         remainingIncome130 > 0 ? `${remainingIncome130}万円` : '1万円未満';
-      console.log('Showing yearly warning toast for 130万円');
       toast.warning(
         `今年は103万円の壁をすでに超えてしまい、あと${displayRemaining130}で130万円の壁を超えてしまいます.`,
         {

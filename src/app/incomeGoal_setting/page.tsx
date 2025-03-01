@@ -58,7 +58,6 @@ export default function IncomeGoalSetting() {
           });
         } else {
           // Handle case where no data is returned
-          console.log('No income goal set for this year.');
           setIncomeGoalData({
             year: incomeGoalData.year,
             incomeGoal: 0, // or any default value
