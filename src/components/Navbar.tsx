@@ -66,7 +66,7 @@ export default function Navbar({
       </Link>
 
       {/* Mobile Menu Toggle */}
-      <button className="md:hidden" onClick={toggleMenu}>
+      <button className="md:hidden ml-4" onClick={toggleMenu}>
         ☰
       </button>
 
