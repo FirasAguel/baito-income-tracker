@@ -90,7 +90,7 @@ const PieChartPage: React.FC = () => {
             : [];
           const availableYears = Array.from(
             new Set([...Object.keys(incomeGoals), ...shiftYears])
-          ).sort();
+          ).sort((a, b) => Number(a) - Number(b)); 
           const currentYear = new Date().getFullYear().toString();
           if (availableYears.includes(currentYear)) {
             setSelectedYear(currentYear);

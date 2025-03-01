@@ -170,7 +170,7 @@ const IncomeSummaryPage: React.FC = () => {
           >
             すべての年
           </button>
-          {years.map((year) => (
+          {[...years].sort((a, b) => Number(a) - Number(b)).map((year) => (
             <button
               key={year}
               onClick={() => setSelectedYear(year)}
