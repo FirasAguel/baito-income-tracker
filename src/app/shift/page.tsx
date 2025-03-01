@@ -5,8 +5,9 @@ import Navbar from '@/components/Navbar';
 import { JobRate } from '../../types';
 import Link from 'next/link';
 import 'react-toastify/dist/ReactToastify.css';
-import { ToastContainer } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import supabase from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 
 interface Shift {
   id: number;
@@ -23,7 +24,7 @@ interface Shift {
 }
 
 export default function ShiftCalendar() {
-  // Single declarations for state variables
+  // State declarations
   const [menuOpen, setMenuOpen] = useState(false);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [jobRates, setJobRates] = useState<JobRate[]>([]);
@@ -35,6 +36,7 @@ export default function ShiftCalendar() {
   });
   const [userId, setUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   // Fetch user data, job rates, and shifts from Supabase
   useEffect(() => {
@@ -78,16 +80,14 @@ export default function ShiftCalendar() {
   const calculateWorkHours = (startTime: string, endTime: string): number => {
     const start = new Date(startTime);
     const end = new Date(endTime);
-    const diffInMs = end.getTime() - start.getTime();
-    return diffInMs / (1000 * 60 * 60);
+    return (end.getTime() - start.getTime()) / (1000 * 60 * 60);
   };
 
   // Calculate end time (出勤時間 + 勤務時間)
   // Calculate end time (出勤時間 + 勤務時間)
   const calculateEndTime = (startTime: string, hours: number): string => {
     const start = new Date(startTime);
-    const totalMinutes = hours * 60;
-    start.setMinutes(start.getMinutes() + totalMinutes);
+    start.setMinutes(start.getMinutes() + hours * 60);
     return start
       .toLocaleString('ja-JP', {
         hour12: false,
@@ -103,8 +103,7 @@ export default function ShiftCalendar() {
   // Calculate start time (退社時間 - 勤務時間)
   const calculateStartTime = (endTime: string, hours: number): string => {
     const end = new Date(endTime);
-    const totalMinutes = hours * 60;
-    end.setMinutes(end.getMinutes() - totalMinutes);
+    end.setMinutes(end.getMinutes() - hours * 60);
     return end
       .toLocaleString('ja-JP', {
         hour12: false,
@@ -147,6 +146,25 @@ export default function ShiftCalendar() {
     return dt
       .toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
       .replace(',', '');
+  };
+
+  const formatTimeDisplay = (time: string): string => {
+    const date = new Date(time);
+    return date
+      .toLocaleString('ja-JP', {
+        hour12: false,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+      .replace(',', '');
+  };
+  const formatHours = (hours: number): string => {
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    return `${h}時間${m}分`;
   };
 
   const addShift = async () => {
@@ -293,25 +311,81 @@ export default function ShiftCalendar() {
     setShifts(shifts.filter((shift) => shift.id !== id));
   };
 
-  const formatTimeDisplay = (time: string): string => {
-    const date = new Date(time);
-    return date
-      .toLocaleString('ja-JP', {
-        hour12: false,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-      .replace(',', '');
-  };
+  // Toast Warning Hook using shifts data (without jobStatistics)
+  useEffect(() => {
+    if (!shifts || shifts.length === 0) return;
 
-  const formatHours = (hours: number): string => {
-    const h = Math.floor(hours);
-    const m = Math.round((hours - h) * 60);
-    return `${h}時間${m}分`;
-  };
+    const currentYear = new Date().getFullYear().toString();
+    const today = new Date();
+
+    // Calculate current week (Monday to Sunday)
+    const dayOfWeek = today.getDay();
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + mondayOffset);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    // Sum hours for shifts within the current week
+    const weeklyShifts = shifts.filter((shift) => {
+      const shiftDate = new Date(shift.startDate);
+      return shiftDate >= monday && shiftDate <= sunday;
+    });
+    const weeklyHours = weeklyShifts.reduce(
+      (acc, shift) => acc + shift.hours,
+      0
+    );
+
+    // Sum income for shifts in the current year
+    const yearlyShifts = shifts.filter((shift) => {
+      return new Date(shift.startDate).getFullYear().toString() === currentYear;
+    });
+    const yearlyIncome = yearlyShifts.reduce(
+      (acc, shift) => acc + shift.income,
+      0
+    );
+
+    // Weekly warning: if between 35 and 40 hours, show remaining hours warning
+    if (weeklyHours >= 35 && weeklyHours < 40) {
+      const remainingHours = 40 - weeklyHours;
+      console.log('Showing weekly warning toast');
+      toast.warning(`今週はあと${remainingHours}時間働けます.`, {
+        position: 'top-right',
+        autoClose: 10000,
+      });
+    }
+
+    // Yearly warnings: split into two thresholds
+    // Warning for approaching 103万円の壁
+    if (yearlyIncome > 950000 && yearlyIncome < 1030000) {
+      // When the remaining income is less than 10k yen, the floored number will be 0.
+      const remainingIncome103 = Math.floor((1030000 - yearlyIncome) / 10000);
+      const displayRemaining103 =
+        remainingIncome103 > 0 ? `${remainingIncome103}万円` : '1万円未満';
+      console.log('Showing yearly warning toast for 103万円');
+      toast.warning(
+        `今年はあと${displayRemaining103}で103万円の壁を超えてしまいます.`,
+        {
+          position: 'top-right',
+          autoClose: 10000,
+        }
+      );
+    }
+    // Warning for approaching 130万円の壁
+    if (yearlyIncome >= 1030000 && yearlyIncome < 1300000) {
+      const remainingIncome130 = Math.floor((1300000 - yearlyIncome) / 10000);
+      const displayRemaining130 =
+        remainingIncome130 > 0 ? `${remainingIncome130}万円` : '1万円未満';
+      console.log('Showing yearly warning toast for 130万円');
+      toast.warning(
+        `今年は103万円の壁をすでに超えてしまい、あと${displayRemaining130}で130万円の壁を超えてしまいます.`,
+        {
+          position: 'top-right',
+          autoClose: 10000,
+        }
+      );
+    }
+  }, [shifts]);
 
   return (
     <div className="container mx-auto py-10">
