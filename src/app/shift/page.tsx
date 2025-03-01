@@ -7,7 +7,6 @@ import Link from 'next/link';
 import 'react-toastify/dist/ReactToastify.css';
 import { toast, ToastContainer } from 'react-toastify';
 import supabase from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
 
 interface Shift {
   id: number;
